@@ -31,8 +31,8 @@ dependencies plus this package's extras into `.venv`. It is idempotent.
 
 The first run builds and caches the two carrier banks the method needs (an "activation" carrier from
 `examples/carriers/general_party_detailed.yaml` and a "suppression" carrier from
-`examples/carriers/silence_detailed_black_frame.yaml`) into `outputs/carrier_bank/`, keyed by carrier id
-and step count. Later runs at the same step count reuse the cache. `--validate-only` parses the scene and
+`examples/carriers/silence_detailed_black_frame.yaml`) into `outputs/carrier_bank/`, keyed by carrier id,
+step count, and a hash of the carrier and sampling settings. Later runs at the same step count reuse the cache. `--validate-only` parses the scene and
 prints the resolved config without touching the GPU.
 
 ## Output files

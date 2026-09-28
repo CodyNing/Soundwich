@@ -124,7 +124,7 @@ def resolve(scene, spec):
             operations.append(dict(op='retime', stem=stem['id'], row=row, start=start, end=end, target=target,
                                    old_window=old, new_window=copy.deepcopy(window)))
     if not operations:
-        raise ValueError('The edit file has no edits')
+        raise ValueError('The edit file has no retime or replace edits')
     check_stems(edited)
     return edited, operations
 

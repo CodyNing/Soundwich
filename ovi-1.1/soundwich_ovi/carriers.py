@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -25,8 +27,11 @@ def load_carrier_spec(path: str | Path) -> dict[str, Any]:
     return data
 
 
-def carrier_cache_path(cache_dir: str | Path, carrier_id: str, sample_steps: int) -> Path:
-    return Path(cache_dir) / f"{carrier_id}_steps{sample_steps}.pt"
+def carrier_cache_path(cache_dir: str | Path, spec: dict[str, Any], settings: dict[str, Any]) -> Path:
+    """Cache file named by carrier id, step count, and a hash of everything that shapes the recording."""
+    payload = json.dumps({"spec": spec, "settings": settings}, sort_keys=True, separators=(",", ":"))
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
+    return Path(cache_dir) / f"{spec['id']}_steps{settings['sample_steps']}_{digest}.pt"
 
 
 def ensure_carrier_bank(
@@ -44,7 +49,16 @@ def ensure_carrier_bank(
 ) -> Path:
     """Return the cached carrier-bank path, building it with ``engine`` if missing."""
     spec = load_carrier_spec(carrier_config)
-    cache_path = carrier_cache_path(cache_dir, str(spec["id"]), sample_steps)
+    settings = {
+        "sample_steps": sample_steps,
+        "video_frame_height_width": list(video_frame_height_width),
+        "solver_name": solver_name,
+        "shift": shift,
+        "video_guidance_scale": video_guidance_scale,
+        "audio_guidance_scale": audio_guidance_scale,
+        "slg_layer": slg_layer,
+    }
+    cache_path = carrier_cache_path(cache_dir, spec, settings)
     if cache_path.exists():
         return cache_path
 

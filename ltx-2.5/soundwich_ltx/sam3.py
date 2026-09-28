@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 from collections.abc import Iterator
 from pathlib import Path
@@ -31,7 +32,9 @@ def export_sampled_frames(
     indices: list[int],
 ) -> Iterator[torch.Tensor]:
     """Save selected decoded frames while forwarding every chunk to the video encoder."""
-    frames_dir.mkdir(parents=True, exist_ok=True)
+    # Start from an empty folder so frames from an earlier run of the same scene cannot linger.
+    shutil.rmtree(frames_dir, ignore_errors=True)
+    frames_dir.mkdir(parents=True)
     selected = set(indices)
     frame_index = 0
     saved_index = 0

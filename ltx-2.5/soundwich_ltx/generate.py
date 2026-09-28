@@ -78,6 +78,38 @@ def record_missing_carriers(compiled: CompiledScene, models: dict[str, str], cac
             cleanup_memory()
 
 
+# Scene fields that may change when reusing a saved Stage 1: SAM prompts/clicks and Stage-2 settings.
+_REUSE_MUTABLE_KEYS = {"sam_prompt", "sam_points", "sam_point_frame"}
+
+
+def _stage1_view(scene: dict) -> dict:
+    view = {key: value for key, value in scene.items() if key not in {"sound_entities", "stems", "method_settings"}}
+    for key in ("sound_entities", "stems"):
+        view[key] = [
+            {k: v for k, v in item.items() if k not in _REUSE_MUTABLE_KEYS} for item in scene.get(key) or []
+        ]
+    view["method_settings"] = {k: v for k, v in (scene.get("method_settings") or {}).items() if k != "stage2"}
+    return view
+
+
+def _check_stage1_reuse(run_root: Path, scene: dict, stem_ids: list[str]) -> None:
+    """Refuse to reuse a saved Stage 1 that was generated from different stems or Stage-1 settings."""
+    manifest_path = run_root / "stage1_manifest.json"
+    if not manifest_path.is_file():
+        raise FileNotFoundError(f"no saved Stage-1 result to reuse in {run_root}")
+    saved_ids = json.loads(manifest_path.read_text(encoding="utf-8")).get("stem_ids")
+    if saved_ids != stem_ids:
+        raise ValueError(f"--reuse-stage1: saved stems {saved_ids} do not match the scene's stems {stem_ids}")
+    saved_scene_path = run_root / "scene.yaml"
+    if saved_scene_path.is_file():
+        saved = yaml.safe_load(saved_scene_path.read_text(encoding="utf-8"))
+        if _stage1_view(saved) != _stage1_view(scene):
+            raise ValueError(
+                "--reuse-stage1: the scene changed beyond SAM prompts/clicks and Stage-2 settings; "
+                "rerun Stage 1 (drop --reuse-stage1) or use a new --output-dir"
+            )
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     args = build_parser().parse_args()
@@ -125,10 +157,12 @@ def main() -> None:
         )
     if args.stage1_only and args.reuse_stage1:
         raise ValueError("--stage1-only and --reuse-stage1 are mutually exclusive")
+    saved_scene = {**scene, "generation": {**(scene.get("generation") or {}), "seed": config.generation.seed}}
+    if args.reuse_stage1:
+        _check_stage1_reuse(run_root, saved_scene, [stem.id for stem in config.stems])
     record_missing_carriers(compiled, dict(config.model.__dict__), carrier_cache)
     # Keep the scene (with the effective seed) next to the run; `soundwich_ltx.edit` recompiles it.
     run_root.mkdir(parents=True, exist_ok=True)
-    saved_scene = {**scene, "generation": {**(scene.get("generation") or {}), "seed": config.generation.seed}}
     (run_root / "scene.yaml").write_text(yaml.safe_dump(saved_scene, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
     from soundwich_ltx.pipeline import MultiStemPipeline  # noqa: PLC0415

@@ -153,11 +153,12 @@ An edit file has `edits`, a list with one entry per edited stem (`stem`, plus `r
   audio latents (40 tokens per second, both stereo channels), and the tokens between the old and the new position
   shift to fill the gap. The window moves with it. The shifted span may not contain another window of the same
   stem. `window` may be omitted for a stem with a single window.
-- `replace`: `{"prompt": ..., "seed": ..., "windows": [...], "stage1": {...}}` (`windows` and `stage1` optional).
-  Stage 1 is run for this stem alone with the new source prompt, seed, windows, and Stage-1 settings (default:
-  the scene's), and its audio latents replace the stem's. A replaced stem can also be retimed.
+- `replace`: `{"prompt": ..., "seed": ..., "windows": [...]}` (`windows` optional). Stage 1 is run for this stem
+  alone with the new source prompt, seed, and windows (and the scene's Stage-1 settings), and its audio latents
+  replace the stem's. A replaced stem can also be retimed.
 - `prompt`: a new source prompt for a kept stem during the refinement; its audio is unchanged. The Noir example
-  uses it to give the woman's stem the same source-only prompt style as the new take.
+  uses it to give the woman's stem the same source-only prompt style as the new take. It only accompanies a
+  `retime` or `replace` in the same edit file; an edit file needs at least one of those.
 
 An optional `video_prompt_substitutions` list of `[old, new]` pairs edits the shared video prompt, e.g. to change
 a spoken line there too (see `examples/edits/noir_new_reply.json`).

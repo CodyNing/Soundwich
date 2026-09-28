@@ -161,8 +161,13 @@ def _build_predictor(
     checkpoint_path: str = "",
 ):
     torch = modules["torch"]
-    if device == "cuda" and not torch.cuda.is_available():
-        raise RuntimeError("device=cuda requested, but torch.cuda.is_available() is false")
+    # SAM3 places its model and inputs with ``.cuda()`` (the current device), so select it here.
+    if device != "cuda" and not device.startswith("cuda:"):
+        raise ValueError(f"unsupported SAM3 device {device!r}; use 'cuda' or 'cuda:N' (or CUDA_VISIBLE_DEVICES)")
+    if not torch.cuda.is_available():
+        raise RuntimeError(f"device={device} requested, but torch.cuda.is_available() is false")
+    if device.startswith("cuda:"):
+        torch.cuda.set_device(int(device.split(":", 1)[1]))
     # An explicit local checkpoint skips the Hugging Face download entirely,
     # which matters because the official SAM3 weights are gated.
     extra: dict[str, Any] = {}

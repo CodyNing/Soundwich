@@ -1,3 +1,16 @@
+This patch modifies LTX-2 (https://github.com/Lightricks/LTX-2, commit
+400fd31054597515f47125691032c04b1c3ee24e) for Soundwich. The files it changes or adds
+are Derivatives of LTX-2.x and are distributed under the LTX-2.x Community License
+Agreement (patches/LICENSE-LTX-2), including the use-based restrictions of its
+Section 4 and Attachment A; they are not covered by the Soundwich Apache-2.0 license.
+
+Changed files:
+  packages/ltx-core/pyproject.toml
+  packages/ltx-core/src/ltx_core/model/audio_vae/vocoder.py
+  packages/ltx-core/src/ltx_core/text_encoders/gemma/int8_convrot.py (new)
+  packages/ltx-pipelines/pyproject.toml
+  packages/ltx-pipelines/src/ltx_pipelines/utils/blocks.py
+
 diff --git a/packages/ltx-core/pyproject.toml b/packages/ltx-core/pyproject.toml
 index 4f8dacc..54e5319 100644
 --- a/packages/ltx-core/pyproject.toml

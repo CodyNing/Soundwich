@@ -30,6 +30,8 @@ DEFAULT_SUPPRESSION_CARRIER = EXAMPLES_DIR / "carriers" / "silence_detailed_blac
 
 # Runtime and method defaults used in the paper (960x960_10s, qint8 + CPU
 # offload, 50-step UniPC).
+MODEL_CLIP_SECONDS = {"960x960_10s": 10.0}
+
 DEFAULT_CONFIG: dict = {
     "ckpt_dir": "./ckpts",
     "model_name": "960x960_10s",
@@ -134,6 +136,12 @@ def main(argv: list[str] | None = None) -> int:
     scene = load_scene(args.scene)
     if args.seed is not None:
         scene = dataclasses.replace(scene, seed=args.seed)
+    # Timeline windows are normalized by the scene duration, so it must equal the model's clip length.
+    if abs(scene.duration_seconds - MODEL_CLIP_SECONDS[config["model_name"]]) > 1e-6:
+        raise ValueError(
+            f"{scene.id}: duration_seconds={scene.duration_seconds} but {config['model_name']} generates "
+            f"{MODEL_CLIP_SECONDS[config['model_name']]} s clips"
+        )
 
     if args.validate_only:
         groups = ",".join(stem.carrier_group for stem in scene.stems)

@@ -10,12 +10,13 @@ UPSTREAM_COMMIT="5b69b25a4b3115216e9ea53a37a04410be6ad39a"
 UPSTREAM_DIR="${ROOT}/third_party/Ovi"
 ENV_DIR="${ROOT}/.venv"
 
-if [ -d "${UPSTREAM_DIR}/.git" ]; then
-  echo "third_party/Ovi already present, skipping clone"
-else
+if [ ! -d "${UPSTREAM_DIR}/.git" ]; then
   mkdir -p "${ROOT}/third_party"
   git clone "${UPSTREAM_URL}" "${UPSTREAM_DIR}"
-  git -C "${UPSTREAM_DIR}" checkout "${UPSTREAM_COMMIT}"
+fi
+if [ "$(git -C "${UPSTREAM_DIR}" rev-parse HEAD)" != "${UPSTREAM_COMMIT}" ]; then
+  git -C "${UPSTREAM_DIR}" fetch origin "${UPSTREAM_COMMIT}"
+  git -C "${UPSTREAM_DIR}" checkout --detach "${UPSTREAM_COMMIT}"
 fi
 
 if [ ! -d "${ENV_DIR}" ]; then

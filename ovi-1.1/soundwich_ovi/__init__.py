@@ -8,31 +8,50 @@ independently controlled, timeline-gated audio stems. See
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
+import warnings
 from pathlib import Path
 
 PINNED_UPSTREAM_COMMIT = "5b69b25a4b3115216e9ea53a37a04410be6ad39a"
 
 
 def _find_upstream_repo_root() -> Path | None:
-    """Return the upstream Ovi checkout root, if importable or locatable."""
-    try:
-        import ovi
+    """Return the upstream Ovi checkout root.
 
-        return Path(ovi.__file__).resolve().parent.parent
-    except ImportError:
-        pass
-
+    The designated checkout wins ($SOUNDWICH_OVI_REPO, then ./third_party/Ovi from setup.sh), so an unrelated
+    ``ovi`` package on the path cannot silently receive the multi-stem patch. An importable ``ovi`` is only
+    used when neither exists.
+    """
     candidates = []
     env_repo = os.environ.get("SOUNDWICH_OVI_REPO")
     if env_repo:
         candidates.append(Path(env_repo))
     candidates.append(Path(__file__).resolve().parents[1] / "third_party" / "Ovi")
-
     for candidate in candidates:
         if (candidate / "ovi" / "__init__.py").is_file():
-            return candidate
-    return None
+            return candidate.resolve()
+    try:
+        import ovi
+
+        return Path(ovi.__file__).resolve().parent.parent
+    except ImportError:
+        return None
+
+
+def _warn_if_not_pinned(repo_root: Path) -> None:
+    try:
+        head = subprocess.run(
+            ["git", "-C", str(repo_root), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return
+    if head != PINNED_UPSTREAM_COMMIT:
+        warnings.warn(
+            f"upstream Ovi at {repo_root} is at {head[:12]}, not the tested commit "
+            f"{PINNED_UPSTREAM_COMMIT[:12]}; rerun ./setup.sh",
+            stacklevel=2,
+        )
 
 
 def _ensure_upstream_importable() -> Path:
@@ -54,8 +73,10 @@ def _ensure_upstream_importable() -> Path:
             f"clone it into third_party/Ovi at commit {PINNED_UPSTREAM_COMMIT}, "
             "or set SOUNDWICH_OVI_REPO (or PYTHONPATH) to an existing checkout."
         )
-    if str(repo_root) not in sys.path:
-        sys.path.insert(0, str(repo_root))
+    _warn_if_not_pinned(repo_root)
+    if str(repo_root) in sys.path:
+        sys.path.remove(str(repo_root))
+    sys.path.insert(0, str(repo_root))
 
     previous_cwd = Path.cwd()
     try:
