@@ -480,6 +480,8 @@ class Stage2Config:
     v2a_hard_route: bool = True
     a2v_active_gain: float = 1.0
     mask_threshold: float = 0.05
+    # Stem editing: keep the given audio latents clean and fixed and refine only the video.
+    freeze_audio: bool = False
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> "Stage2Config":
@@ -499,6 +501,7 @@ class Stage2Config:
             v2a_hard_route=bool(raw.get("v2a_hard_route", True)),
             a2v_active_gain=float(raw.get("a2v_active_gain", 1.0)),
             mask_threshold=float(raw.get("mask_threshold", 0.05)),
+            freeze_audio=bool(raw.get("freeze_audio", False)),
         )
         if value.a2v_active_gain < 0:
             raise ValueError("stage2.a2v_active_gain must be non-negative")
@@ -600,6 +603,8 @@ class MultiStemConfig:
                 raise ValueError("Stage-2 scene coupling requires at least two real stems")
             if self.stage2.scene_coupling.uses_scene_lane and not self.scene_coupling.uses_scene_lane:
                 raise ValueError("Stage-2 scene coupling requires the Stage-1 scene lane")
+            if self.stage2.freeze_audio and (self.stage2.negative_audio_cfg or self.stage2.scene_coupling.enabled):
+                raise ValueError("stage2.freeze_audio requires stage2.audio_cfg 1 and disabled Stage-2 scene coupling")
 
     def missing_model_paths(self) -> list[Path]:
         return [Path(value) for value in self.model.paths() if not Path(value).exists()]
@@ -678,6 +683,8 @@ class MultiStemConfig:
             "a2v_active_gain": self.stage2.a2v_active_gain,
             "mask_threshold": self.stage2.mask_threshold,
         }
+        if self.stage2.freeze_audio:
+            summary["stage2"]["freeze_audio"] = True
         summary["sam3"] = {
             key: value
             for key, value in self.sam3.__dict__.items()

@@ -336,16 +336,26 @@ class MultiStemPipeline:
         root: Path,
         *,
         token_masks: dict[int, list[float]] | None = None,
+        audio_latents: torch.Tensor | None = None,
+        output_root: Path | None = None,
     ) -> dict[str, object]:
-        """Upscale the Stage-1 video and refine it with SAM-routed A2V/V2A and scene broadcast."""
+        """Upscale the Stage-1 video and refine it with SAM-routed A2V/V2A and scene broadcast.
+
+        With ``stage2.freeze_audio`` (stem editing), ``audio_latents`` (default: the Stage-1 audio) stay clean and
+        fixed while only the video is refined; they are also the saved and decoded audio. Inputs are read from
+        ``root`` and outputs written to ``output_root`` (default: ``root``).
+        """
         config = self.config
         if not config.stage2.enabled:
             raise RuntimeError("Stage 2 is disabled in this configuration")
         if self.upsampler is None or self.stage_2 is None:
             raise RuntimeError("Stage 2 is enabled but its models were not constructed")
+        freeze_audio = config.stage2.freeze_audio
+        destination = output_root or root
+        destination.mkdir(parents=True, exist_ok=True)
         checkpoint = torch.load(root / "stage1_latents.pt", map_location="cpu", weights_only=True)
         stage1_video_cpu = checkpoint["video"]
-        stage1_audio_cpu = checkpoint["audio"]
+        stage1_audio_cpu = checkpoint["audio"] if audio_latents is None else audio_latents
         stage1_scene_audio_cpu = checkpoint.get("scene_audio")
         if token_masks is None:
             token_masks = read_token_masks(config, root / "sam_outputs" / "stage2_a2v_mask.json")
@@ -412,9 +422,9 @@ class MultiStemPipeline:
                 ),
                 audio=ModalitySpec(
                     context=positive_audio,
-                    noise_scale=stage2_sigmas[0].item(),
+                    noise_scale=0.0 if freeze_audio else stage2_sigmas[0].item(),
                     initial_latent=stage2_audio,
-                    frozen=False,
+                    frozen=freeze_audio,
                 ),
                 batch_size=audio_lane_count,
                 max_batch_size=audio_lane_count,
@@ -424,15 +434,20 @@ class MultiStemPipeline:
         if refined_video is None or refined_audio is None:
             raise RuntimeError("Stage-2 refinement did not return both modalities")
         refined = refined_video.latent[:1]
-        refined_real_audio = refined_audio.latent[:stem_count]
+        if freeze_audio:
+            output_audio = stage1_audio_cpu
+            refined_real_audio = stage1_audio_cpu[:stem_count]
+        else:
+            output_audio = refined_audio.latent
+            refined_real_audio = refined_audio.latent[:stem_count]
         refined_scene_audio = refined_audio.latent[stem_count : stem_count + 1] if scene_lane else None
         result: dict[str, object] = {
             "stage2_steps": len(stage2_sigmas) - 1,
             "stage2_sigmas": [round(float(value), 6) for value in stage2_sigmas],
         }
-        video_path = root / "stage2_video_latent.pt"
+        video_path = destination / "stage2_video_latent.pt"
         torch.save({"video": refined.detach().cpu(), "sigmas": stage2_sigmas.detach().cpu()}, video_path)
-        audio_path = root / "stage2_audio_latent.pt"
+        audio_path = destination / "stage2_audio_latent.pt"
         torch.save(
             {
                 "audio": refined_real_audio.detach().cpu(),
@@ -444,13 +459,13 @@ class MultiStemPipeline:
         )
         result.update({"stage2_video_latent": str(video_path), "stage2_audio_latent": str(audio_path)})
         _decoded_audio, mix, audio_artifacts = self._decode_audio(
-            root / "stage2_audio",
-            refined_audio.latent,
+            destination / "stage2_audio",
+            output_audio,
             scene_lane=scene_lane,
         )
         result.update({f"stage2_{key}": value for key, value in audio_artifacts.items()})
         result["video"] = self._decode_video(
-            root / "stage2_mix.mp4",
+            destination / "stage2_mix.mp4",
             refined,
             mix,
             generator,

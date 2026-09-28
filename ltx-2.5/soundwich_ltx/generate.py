@@ -11,6 +11,8 @@ import logging
 import os
 from pathlib import Path
 
+import yaml
+
 from soundwich_ltx.config import MultiStemConfig
 from soundwich_ltx.scene import CompiledScene, carrier_record_config, compile_scene, load_scene
 
@@ -47,7 +49,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _record_missing_carriers(compiled: CompiledScene, models: dict[str, str], cache_root: Path) -> None:
+def record_missing_carriers(compiled: CompiledScene, models: dict[str, str], cache_root: Path) -> None:
     from ltx_pipelines.utils.helpers import cleanup_memory  # noqa: PLC0415
 
     from soundwich_ltx.pipeline import MultiStemPipeline  # noqa: PLC0415
@@ -72,8 +74,9 @@ def main() -> None:
     args = build_parser().parse_args()
     output_dir = args.output_dir.expanduser().resolve()
     carrier_cache = (args.carrier_cache or output_dir / "carriers").expanduser().resolve()
+    scene = load_scene(args.scene)
     compiled = compile_scene(
-        load_scene(args.scene),
+        scene,
         models_dir=args.models_dir.expanduser().resolve(),
         carrier_cache=carrier_cache,
         seed=args.seed,
@@ -113,7 +116,11 @@ def main() -> None:
         )
     if args.stage1_only and args.reuse_stage1:
         raise ValueError("--stage1-only and --reuse-stage1 are mutually exclusive")
-    _record_missing_carriers(compiled, dict(config.model.__dict__), carrier_cache)
+    record_missing_carriers(compiled, dict(config.model.__dict__), carrier_cache)
+    # Keep the scene (with the effective seed) next to the run; `soundwich_ltx.edit` recompiles it.
+    run_root.mkdir(parents=True, exist_ok=True)
+    saved_scene = {**scene, "generation": {**(scene.get("generation") or {}), "seed": config.generation.seed}}
+    (run_root / "scene.yaml").write_text(yaml.safe_dump(saved_scene, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
     from soundwich_ltx.pipeline import MultiStemPipeline  # noqa: PLC0415
 

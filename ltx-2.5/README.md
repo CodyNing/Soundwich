@@ -98,7 +98,8 @@ Everything for one run is written to `outputs/<scene id>_seed<seed>/`:
 | `stage2_audio/pre_bwe/` | Same stems before bandwidth extension (24 kHz) |
 | `stage1_mix.mp4`, `<stem>.wav`, `mix.wav`, `pre_bwe/` | Half-resolution Stage-1 result |
 | `sam_outputs/` | SAM prompts, sampled frames, token masks, backend logs |
-| `stage1_latents.pt`, `stage2_*_latent.pt`, `run.json` | Latents and the resolved configuration |
+| `stage1_latents.pt`, `stage2_*_latent.pt`, `run.json`, `scene.yaml` | Latents, the resolved configuration, and the scene (used by `edit`) |
+| `edits/<edit id>/` | Stem edits (see [Editing stems](#editing-stems)) |
 
 ### Reviewing SAM masks
 
@@ -112,6 +113,47 @@ people who swap places). Inspect every run:
 3. Rerun with `--reuse-stage1`. This keeps the Stage-1 result and recomputes only the masks and Stage 2.
 
 The example includes the reviewed prompts and clicks used for the paper's result.
+
+## Editing stems
+
+A finished run can be edited without regenerating the other stems. Editing builds new audio latents, then
+refines the video again around them:
+
+- **Retime** moves each window of a stem to a new start. The saved Stage-2 audio latent is cut at the window
+  (frame-snapped) and the surrounding latent frames shift to keep the clip length; nothing is re-encoded.
+- **Replace** regenerates one stem with Stage 1 (new line or prompt, original visual prompt and clip length, half
+  resolution). Its audio latent replaces that stem; the other stems keep their saved Stage-2 latents. A replaced
+  stem can also be retimed.
+- **Video refinement** restarts from the saved Stage-1 video and SAM masks with the Stage-2 upscale and 8-step
+  schedule. Only the video is denoised; the edited audio latents stay clean and fixed. Routing uses the edited
+  windows and the original masks, the scene lane is off, and Stage-2 suppression replay stays active outside the
+  edited windows.
+
+```bash
+$PY -m soundwich_ltx.edit --run outputs/neon_biology_lab_seed1096 \
+    --edit examples/edits/neon_biology_lab_swap_turns.yaml --dry-run   # print the plan, no GPU
+$PY -m soundwich_ltx.edit --run outputs/neon_biology_lab_seed1096 \
+    --edit examples/edits/neon_biology_lab_swap_turns.yaml
+```
+
+The example swaps the scientist's and the android's turns. An edit lists stems by id:
+
+```yaml
+id: new_reply                    # output folder: <run>/edits/new_reply/
+seed: 1096                       # optional Stage-2 seed (default: the run's seed)
+stems:
+  scientist_voice:
+    retime: [6.3]                # new start (s) per window, null keeps one; lengths are kept
+  android_voice:
+    replace:
+      windows: [{text: Everything is stable now}]   # replaces the quoted line in the stem prompt
+      # optional: positive, negative, per-window start/end, seed (default: the run's seed)
+```
+
+The run folder must contain `scene.yaml` (written by `generate`; otherwise pass `--scene`), `stage1_latents.pt`,
+`stage2_audio_latent.pt`, and `sam_outputs/stage2_a2v_mask.json`. The edit writes `stage2_mix.mp4`,
+`stage2_audio/` (the decoded edited stems and mix), the fixed `audio_latents.pt`, the edited `scene.yaml` and
+`timeline.json`, and for replacements the new Stage-1 take in `takes/<stem>/`.
 
 ## Scene format
 
