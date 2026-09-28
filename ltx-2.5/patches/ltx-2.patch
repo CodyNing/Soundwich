@@ -1,0 +1,294 @@
+diff --git a/packages/ltx-core/pyproject.toml b/packages/ltx-core/pyproject.toml
+index 4f8dacc..54e5319 100644
+--- a/packages/ltx-core/pyproject.toml
++++ b/packages/ltx-core/pyproject.toml
+@@ -19,6 +19,9 @@ dependencies = [
+     "safetensors",
+     "accelerate",
+     "scipy>=1.14",
++    # Executes the official Comfy INT8 ConvRot Gemma 4 and transformer
++    # checkpoints without expanding their Linear weights back to BF16.
++    "comfy-kitchen>=0.2.15",
+     # Apple Silicon only: Apple's fused MPSGraph SDPA, the AUTOMATIC attention
+     # backend on MPS. The marker installs it on Apple Silicon and prunes it
+     # everywhere else (Linux/CUDA), so it is a hard requirement exactly where it
+diff --git a/packages/ltx-core/src/ltx_core/model/audio_vae/vocoder.py b/packages/ltx-core/src/ltx_core/model/audio_vae/vocoder.py
+index 7fa1572..d19ca20 100644
+--- a/packages/ltx-core/src/ltx_core/model/audio_vae/vocoder.py
++++ b/packages/ltx-core/src/ltx_core/model/audio_vae/vocoder.py
+@@ -581,6 +581,10 @@ class VocoderWithBWE(nn.Module, Disposable):
+         Returns:
+             Waveform tensor of shape (B, out_channels, T_out) clipped to [-1, 1].
+         """
++        return self.decode_with_pre_bwe(mel_spec)[1]
++
++    def decode_with_pre_bwe(self, mel_spec: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
++        """Return the base-vocoder waveform and its bandwidth-extended counterpart."""
+         input_dtype = mel_spec.dtype
+         # Run the entire forward pass in fp32.  bfloat16 accumulation errors
+         # compound through 108 sequential convolutions and degrade spectral
+@@ -609,7 +613,8 @@ class VocoderWithBWE(nn.Module, Disposable):
+         )
+ 
+         with fp32_ctx:
+-            x = self.vocoder(mel_spec.float())
++            pre_bwe = self.vocoder(mel_spec.float())
++            x = pre_bwe
+             _, _, length_low_rate = x.shape
+             output_length = length_low_rate * self.output_sampling_rate // self.input_sampling_rate
+ 
+@@ -627,4 +632,5 @@ class VocoderWithBWE(nn.Module, Disposable):
+             skip = self.resampler(x)
+             assert residual.shape == skip.shape, f"residual {residual.shape} != skip {skip.shape}"
+ 
+-            return torch.clamp(residual + skip, -1, 1)[..., :output_length].to(input_dtype)
++            post_bwe = torch.clamp(residual + skip, -1, 1)[..., :output_length]
++            return pre_bwe.to(input_dtype), post_bwe.to(input_dtype)
+diff --git a/packages/ltx-core/src/ltx_core/text_encoders/gemma/int8_convrot.py b/packages/ltx-core/src/ltx_core/text_encoders/gemma/int8_convrot.py
+new file mode 100644
+index 0000000..76c19de
+--- /dev/null
++++ b/packages/ltx-core/src/ltx_core/text_encoders/gemma/int8_convrot.py
+@@ -0,0 +1,70 @@
++"""Loader support for Comfy INT8 ConvRot checkpoints."""
++
++from __future__ import annotations
++
++import json
++from pathlib import Path
++
++import safetensors
++import torch
++from comfy_kitchen.tensor import QuantizedTensor, TensorWiseINT8Layout
++
++from ltx_core.loader.primitives import StateDict
++from ltx_core.loader.sd_ops import SDOps
++from ltx_core.loader.sft_loader import SafetensorsModelStateDictLoader
++
++_MARKER_SUFFIX = ".comfy_quant"
++_WEIGHT_SUFFIX = ".weight"
++_SCALE_SUFFIX = ".weight_scale"
++
++
++def is_comfy_int8_convrot_checkpoint(path: str | Path) -> bool:
++    """Return whether *path* contains Comfy's INT8 tensorwise markers."""
++    checkpoint = Path(path)
++    if not checkpoint.is_file() or checkpoint.suffix != ".safetensors":
++        return False
++    with safetensors.safe_open(checkpoint, framework="pt") as handle:
++        return any(key.endswith(_MARKER_SUFFIX) for key in handle.keys())  # noqa: SIM118
++
++
++def _decode_marker(value: torch.Tensor) -> dict[str, object]:
++    return json.loads(value.detach().cpu().numpy().tobytes())
++
++
++class ComfyInt8ConvRotStateDictLoader(SafetensorsModelStateDictLoader):
++    """Wrap marked Gemma or transformer weights before model loading."""
++
++    def load(
++        self,
++        path: str | list[str],
++        sd_ops: SDOps | None = None,
++        device: torch.device | None = None,
++    ) -> StateDict:
++        loaded = super().load(path, sd_ops=sd_ops, device=device)
++        state = loaded.sd
++        marker_keys = [key for key in state if key.endswith(_MARKER_SUFFIX)]
++        for marker_key in marker_keys:
++            prefix = marker_key[: -len(_MARKER_SUFFIX)]
++            marker = _decode_marker(state.pop(marker_key))
++            if marker.get("format") != "int8_tensorwise":
++                raise ValueError(f"unsupported Comfy quantization marker at {marker_key!r}: {marker}")
++
++            weight_key = f"{prefix}{_WEIGHT_SUFFIX}"
++            scale_key = f"{prefix}{_SCALE_SUFFIX}"
++            try:
++                weight = state[weight_key]
++                scale = state.pop(scale_key)
++            except KeyError as error:
++                raise ValueError(f"incomplete Comfy INT8 layer at {prefix!r}") from error
++            if weight.dtype != torch.int8:
++                raise ValueError(f"Comfy INT8 weight {weight_key!r} has dtype {weight.dtype}")
++
++            params = TensorWiseINT8Layout.Params(
++                scale=scale,
++                orig_dtype=torch.bfloat16,
++                orig_shape=tuple(weight.shape),
++                convrot=bool(marker.get("convrot", False)),
++                convrot_groupsize=int(marker.get("convrot_groupsize", 256)),
++            )
++            state[weight_key] = QuantizedTensor(weight, "TensorWiseINT8Layout", params)
++        return StateDict(sd=state, device=loaded.device, size=loaded.size, dtype=loaded.dtype)
+diff --git a/packages/ltx-pipelines/pyproject.toml b/packages/ltx-pipelines/pyproject.toml
+index 59f2c99..b6f9301 100644
+--- a/packages/ltx-pipelines/pyproject.toml
++++ b/packages/ltx-pipelines/pyproject.toml
+@@ -4,7 +4,7 @@ version = "1.2.0"
+ description = "Pipelines implementation for Lightricks' LTX-2 model"
+ readme = "README.md"
+ requires-python = ">=3.10"
+-dependencies = ["ltx-core", "av", "tqdm", "pillow", "openimageio", "cloudpickle>=3.1"]
++dependencies = ["ltx-core", "av", "tqdm", "pillow", "openimageio", "cloudpickle>=3.1", "pyyaml>=6.0"]
+ 
+ [build-system]
+ requires = ["uv_build>=0.9.8,<0.10.0"]
+diff --git a/packages/ltx-pipelines/src/ltx_pipelines/utils/blocks.py b/packages/ltx-pipelines/src/ltx_pipelines/utils/blocks.py
+index 9d2d7d6..847f088 100644
+--- a/packages/ltx-pipelines/src/ltx_pipelines/utils/blocks.py
++++ b/packages/ltx-pipelines/src/ltx_pipelines/utils/blocks.py
+@@ -42,9 +42,7 @@ from ltx_core.model.audio_vae import (
+     AudioDecoderConfigurator,
+     AudioEncoderConfigurator,
+     VocoderConfigurator,
+-)
+-from ltx_core.model.audio_vae import (
+-    decode_audio as vae_decode_audio,
++    VocoderWithBWE,
+ )
+ from ltx_core.model.model_protocol import LTXModelProtocol, ModelConfigurator
+ from ltx_core.model.transformer import (
+@@ -90,6 +88,10 @@ from ltx_core.text_encoders.gemma import (
+     resolve_gemma_weight_paths,
+ )
+ from ltx_core.text_encoders.gemma.embeddings_processor import EmbeddingsProcessor, EmbeddingsProcessorOutput
++from ltx_core.text_encoders.gemma.int8_convrot import (
++    ComfyInt8ConvRotStateDictLoader,
++    is_comfy_int8_convrot_checkpoint,
++)
+ from ltx_core.tools import AudioLatentTools, LatentTools, VideoLatentTools
+ from ltx_core.types import (
+     VIDEO_SCALE_FACTORS,
+@@ -324,6 +326,14 @@ class DiffusionStage:
+             else model_configurator
+         )
+ 
++        comfy_int8 = is_comfy_int8_convrot_checkpoint(checkpoint_path)
++        if comfy_int8 and offload_mode != OffloadMode.NONE:
++            raise ValueError("Comfy INT8 ConvRot transformers currently require offload_mode=none")
++        if comfy_int8 and quantization is not None:
++            raise ValueError(
++                "Comfy INT8 ConvRot transformers are already quantized; do not set a runtime quantization policy"
++            )
++
+         transformer_builder: ModelBuilderProtocol[LTXModelProtocol]
+         if offload_mode == OffloadMode.NONE:
+             transformer_builder = Builder(
+@@ -331,6 +341,7 @@ class DiffusionStage:
+                 model_class_configurator=configurator,
+                 model_sd_ops=model_sd_ops,
+                 loras=tuple(loras),
++                model_loader=ComfyInt8ConvRotStateDictLoader() if comfy_int8 else None,
+                 registry=registry or ModelRegistry(cache_models=True, cache_weights=False),
+             )
+         else:
+@@ -512,6 +523,7 @@ class DiffusionStage:
+         stepper: DiffusionStepProtocol | None = None,
+         loop: Callable[..., tuple[LatentState | None, LatentState | None]] | None = None,
+         max_batch_size: int = 1,
++        batch_size: int = 1,
+     ) -> tuple[LatentState | None, LatentState | None]:
+         """Build transformer -> run denoising loop -> free transformer.
+         Returns ``(video_state | None, audio_state | None)`` with cleared
+@@ -526,7 +538,9 @@ class DiffusionStage:
+         if stepper is None:
+             stepper = EulerDiffusionStep()
+ 
+-        pixel_shape = VideoPixelShape(batch=1, frames=frames, height=height, width=width, fps=fps)
++        if batch_size < 1:
++            raise ValueError("batch_size must be positive")
++        pixel_shape = VideoPixelShape(batch=batch_size, frames=frames, height=height, width=width, fps=fps)
+ 
+         # Build video_tools up front so it can be forwarded to the transformer
+         # context (required by TiledDataParallelBuilder in multi-GPU mode).
+@@ -686,23 +700,30 @@ class PromptEncoder:
+         else:
+             gemma_sd_ops, gemma_module_ops = get_gemma_ops(text_encoder_path)
+             weight_paths = resolve_gemma_weight_paths(text_encoder_path)
++            comfy_int8 = is_comfy_int8_convrot_checkpoint(text_encoder_path)
++            if comfy_int8 and offload_mode != OffloadMode.NONE:
++                raise ValueError("Comfy INT8 ConvRot Gemma currently requires offload_mode=none")
++            text_encoder_loader = ComfyInt8ConvRotStateDictLoader() if comfy_int8 else None
+             self._text_encoder_builder = Builder(
+                 model_path=weight_paths,
+                 model_class_configurator=GemmaTextEncoderConfigurator.with_gemma_model_path(text_encoder_path),
+                 model_sd_ops=gemma_sd_ops,
+                 module_ops=gemma_module_ops,
++                model_loader=text_encoder_loader,
+                 registry=registry,
+             )
+-            self._streaming_text_encoder_builder = StreamingModelBuilder(
+-                model_path=weight_paths,
+-                model_class_configurator=GemmaTextEncoderConfigurator.with_gemma_model_path(text_encoder_path),
+-                model_sd_ops=gemma_sd_ops,
+-                module_ops=gemma_module_ops,
+-                registry=registry,
+-                blocks_attr="model.model.language_model.layers",
+-                blocks_prefix="model.model.language_model.layers",
+-                cpu_slots_count=DISK_CPU_SLOTS if offload_mode == OffloadMode.DISK else None,
+-            )
++            self._streaming_text_encoder_builder = None
++            if not comfy_int8:
++                self._streaming_text_encoder_builder = StreamingModelBuilder(
++                    model_path=weight_paths,
++                    model_class_configurator=GemmaTextEncoderConfigurator.with_gemma_model_path(text_encoder_path),
++                    model_sd_ops=gemma_sd_ops,
++                    module_ops=gemma_module_ops,
++                    registry=registry,
++                    blocks_attr="model.model.language_model.layers",
++                    blocks_prefix="model.model.language_model.layers",
++                    cpu_slots_count=DISK_CPU_SLOTS if offload_mode == OffloadMode.DISK else None,
++                )
+ 
+         # Always set: shared enhance aliases the encode builder (same object / residency).
+         if enhancer_text_encoder_builder is not None:
+@@ -724,6 +745,11 @@ class PromptEncoder:
+             model_path=embeddings_paths,
+             model_class_configurator=EmbeddingsProcessorConfigurator.with_gemma_model_path(text_encoder_path),
+             model_sd_ops=EMBEDDINGS_PROCESSOR_KEY_OPS,
++            model_loader=(
++                ComfyInt8ConvRotStateDictLoader()
++                if any(is_comfy_int8_convrot_checkpoint(path) for path in embeddings_paths)
++                else None
++            ),
+             registry=registry,
+         )
+ 
+@@ -1177,8 +1203,18 @@ class AudioDecoder:
+         )
+         self._alloc_trim_strategy = alloc_trim_strategy
+ 
++    @property
++    def uses_bandwidth_extension(self) -> bool:
++        """Whether this checkpoint decodes through the bundled BWE vocoder."""
++        config = self._vocoder_builder.model_config().get("vocoder", {})
++        return isinstance(config, dict) and "bwe" in config
++
+     def __call__(self, latent: torch.Tensor) -> Audio:
+-        """Decode audio *latent* through VAE decoder + vocoder, then free both."""
++        """Decode audio *latent* through VAE decoder + the checkpoint's full vocoder."""
++        return self.decode_variants(latent)[1]
++
++    def decode_variants(self, latent: torch.Tensor) -> tuple[Audio, Audio]:
++        """Decode both the base-vocoder and bandwidth-extended waveforms in one pass."""
+         logger.info("Building audio decoder + vocoder from %s", self._checkpoint_path)
+         # The vocoder always runs in fp32 (bf16 accumulation degrades spectral
+         # metrics). On CUDA/CPU it is stored in bf16 and autocast upcasts per-op to
+@@ -1195,7 +1231,16 @@ class AudioDecoder:
+                 alloc_trim_strategy=self._alloc_trim_strategy,
+             ) as vocoder,
+         ):
+-            return vae_decode_audio(latent, decoder, vocoder)
++            decoded = decoder(latent.to(device=self._device, dtype=self._dtype))
++            if isinstance(vocoder, VocoderWithBWE):
++                pre_bwe, post_bwe = vocoder.decode_with_pre_bwe(decoded)
++                return (
++                    Audio(waveform=pre_bwe.squeeze(0).float(), sampling_rate=vocoder.input_sampling_rate),
++                    Audio(waveform=post_bwe.squeeze(0).float(), sampling_rate=vocoder.output_sampling_rate),
++                )
++            waveform = vocoder(decoded).squeeze(0).float()
++            audio = Audio(waveform=waveform, sampling_rate=vocoder.output_sampling_rate)
++            return audio, audio
+ 
+ 
+ # ---------------------------------------------------------------------------

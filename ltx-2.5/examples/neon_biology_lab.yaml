@@ -1,0 +1,117 @@
+# Four independently controlled stems: a dog and a cat sound together, then a
+# scientist and a robot speak in turn. Every stem is saved separately and mixed.
+id: neon_biology_lab
+
+# Nominal clip length used for timeline feathering (2% of this duration).
+duration_seconds: 10
+
+generation:
+  seed: 130
+  frames: 249
+  frame_rate: 25
+  # Defaults: width 768, height 448, steps 40, video_cfg 3.0, audio_cfg 7.0.
+
+visual:
+  positive: Premium near-future science-fiction cinema with immaculate practical laboratory
+    design, polished lens rendering, realistic skin, and restrained performances.
+    In a softly glowing biology lab, a woman in a silver jacket stands at the left
+    and a white humanoid robot stands at the right, both framed waist-up, while a
+    brown dog and an orange cat sit prominently on two low examination platforms between
+    them. Cool cyan panels illuminate glass equipment and a warm diagnostic lamp gives
+    every face and animal a clean amber edge. The dog barks as the cat meows, then
+    both settle; the woman studies them and speaks before the robot turns toward her
+    and answers. A gentle forward drift holds all four subjects in one stable continuous
+    composition.
+  negative: blurry, low detail, soft face, distorted anatomy, duplicate woman, duplicate
+    robot, duplicate animals, extra limbs, fused dog and cat, flicker, identity drift,
+    camera cuts, sudden zoom, cropped subjects, distant subjects, chaotic motion,
+    low quality CGI, text, subtitles, logos, watermark
+  # Appended to the visual prompt as "Visible sound entities: ...".
+  allowed_entities:
+  - scientist
+  - android
+  - lab_dog
+  - lab_cat
+
+audio_globals:
+  positive: clear foreground audio, clean cinematic recording
+  negative: muffled sound, distorted audio, random noise, random dialogue, music
+
+# One activation carrier per sound group, recorded once from these prompts and cached.
+entity_groups:
+  dog_bark:
+    carrier:
+      positive: A dog barks loudly and repeatedly.
+      negative: speech, music, silence, quiet sound
+      seed: 31
+  cat_meow:
+    carrier:
+      positive: A cat meows loudly and repeatedly.
+      negative: speech, music, silence, quiet sound
+      seed: 33
+  female_speech:
+    carrier:
+      positive: high quality clear female voice speaking loudly
+      negative: male voice
+      seed: 42
+      audio_rescale: 0.7
+  male_speech:
+    carrier:
+      positive: male voice speaking loudly
+      negative: female voice
+      seed: 42
+      audio_rescale: 0.7
+
+sound_entities:
+- id: scientist
+  group: female_speech
+  sam_prompt: woman in silver jacket
+  negative_source_audio: clear high-pitched adult female voice
+- id: android
+  group: male_speech
+  sam_prompt: white robot
+  negative_source_audio: deep low-pitched adult male voice
+- id: lab_dog
+  group: dog_bark
+  sam_prompt: brown dog
+  negative_source_audio: dog barking
+- id: lab_cat
+  group: cat_meow
+  sam_prompt: orange cat
+  negative_source_audio: cat meowing
+
+stems:
+- id: dog_barks
+  entity: lab_dog
+  positive: loud natural dog barking
+  negative: cat meowing, speech, male voice, female voice, music
+  volume: 0.8
+  # Continuous non-speech sources are kept out of the shared scene lane.
+  scene_context_enabled: false
+  windows:
+  - {start: 0.4, end: 2.8, text: repeated dog barking}
+- id: cat_meows
+  entity: lab_cat
+  positive: loud natural cat meowing
+  negative: dog barking, speech, male voice, female voice, music
+  volume: 0.75
+  scene_context_enabled: false
+  windows:
+  - {start: 0.4, end: 2.8, text: repeated cat meowing}
+- id: scientist_voice
+  entity: scientist
+  positive: clear high-pitched adult female voice says "Both animals are calm now"
+  negative: deep low-pitched adult male voice, dog barking, cat meowing, music
+  windows:
+  - {start: 3.1, end: 6.0, text: Both animals are calm now}
+- id: android_voice
+  entity: android
+  positive: deep calm adult male voice from the white robot says "Their signals match
+    perfectly"
+  negative: clear high-pitched adult female voice, dog barking, cat meowing, music
+  windows:
+  - {start: 6.3, end: 9.2, text: Their signals match perfectly}
+
+method_settings:
+  stage2:
+    a2v_active_gain: 1.5
