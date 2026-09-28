@@ -1,8 +1,8 @@
 This patch modifies LTX-2 (https://github.com/Lightricks/LTX-2, commit
 400fd31054597515f47125691032c04b1c3ee24e) for Soundwich. The files it changes or adds
-are Derivatives of LTX-2.x and are distributed under the LTX-2.x Community License
-Agreement (patches/LICENSE-LTX-2), including the use-based restrictions of its
-Section 4 and Attachment A; they are not covered by the Soundwich Apache-2.0 license.
+are Derivatives of LTX-2.x and, like the rest of this ltx-2.5/ folder, are distributed
+under the LTX-2.x Community License Agreement (ltx-2.5/LICENSE), including the
+use-based restrictions of its Section 4 and Attachment A.
 
 Changed files:
   packages/ltx-core/pyproject.toml

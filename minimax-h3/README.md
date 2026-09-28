@@ -200,5 +200,14 @@ are thresholded at 0.15 after box pooling.
 ## License
 
 Soundwich code is released under Apache-2.0. The attention processors in `soundwich_h3/batch.py` and
-`routing.py` are adapted from diffusers (Apache-2.0). The MiniMax H3 checkpoint is covered by the license in its
-Hugging Face repository, and SAM 3 by its own license.
+`routing.py` are adapted from diffusers (Apache-2.0). SAM 3 is covered by its own license.
+
+The MiniMax H3 checkpoint is covered by the
+[MiniMax H3 Community License](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/42ed227ee7df40d41602854ae760620d6eb651fe/LICENSE),
+which you accept by downloading or running it. Read it before use. In particular:
+
+- **Territory.** The license applies only outside the European Union, the United Kingdom, the Republic of Korea,
+  and the United States. It does not authorize using the weights, or using or displaying their outputs, in those
+  regions. Contact MiniMax for a license there.
+- **Attribution.** Products or services built with MiniMax H3 must show "Powered by MiniMax H3".
+- **Acceptable use.** Its Acceptable Use Policy applies to everything you generate.

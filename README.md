@@ -187,10 +187,14 @@ Soundwich/
 
 ## License and acknowledgements
 
-The Soundwich code is released under the [Apache 2.0 License](LICENSE). It builds on
+The Soundwich code is released under the [Apache 2.0 License](LICENSE), except `ltx-2.5/` (see below). It builds on
 [LTX-2](https://github.com/Lightricks/LTX-2), [Ovi](https://github.com/character-ai/Ovi),
 [MiniMax H3](https://github.com/MiniMax-AI/MiniMax-H3) via [🤗 Diffusers](https://github.com/huggingface/diffusers), and
 [SAM 3](https://github.com/facebookresearch/sam3). The upstream code and model weights are fetched separately and remain under their own
-licenses and terms of use. Please review them before use. One exception: `ltx-2.5/patches/ltx-2.patch` modifies LTX-2
-source files and is therefore distributed under the LTX-2.x Community License Agreement
-([`ltx-2.5/patches/LICENSE-LTX-2`](ltx-2.5/patches/LICENSE-LTX-2)), not Apache 2.0.
+licenses and terms of use. Please review them before use.
+
+- **`ltx-2.5/`** builds on and extends LTX-2 and is distributed under the
+  [LTX-2.x Community License Agreement](ltx-2.5/LICENSE), including its use-based restrictions, not Apache 2.0.
+- **MiniMax H3 weights** are licensed by MiniMax for use only outside the European Union, the United Kingdom, the
+  Republic of Korea, and the United States, and their outputs may not be used or displayed in those regions.
+  See [`minimax-h3/README.md`](minimax-h3/README.md#license).

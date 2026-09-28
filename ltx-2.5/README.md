@@ -194,7 +194,9 @@ Key knobs:
 
 ## License
 
-Soundwich code is released under Apache-2.0. The exception is `patches/ltx-2.patch`: it modifies LTX-2 source
-files, so it is distributed under the LTX-2.x Community License Agreement, a copy of which is in
-`patches/LICENSE-LTX-2` (including the use-based restrictions of its Section 4 and Attachment A). LTX-2 and its
-checkpoints are covered by that license; SAM 3 by its own license.
+This `ltx-2.5/` folder (the `soundwich_ltx` package, the examples, the bundled carrier, and
+`patches/ltx-2.patch`) builds on and extends LTX-2, so it is distributed under the **LTX-2.x Community License
+Agreement** in [`LICENSE`](LICENSE), not under the Apache-2.0 license of the rest of the repository. Its
+use-based restrictions (Section 4 and Attachment A) apply to this code, to LTX-2, and to the LTX-2.5 checkpoints.
+`patches/ltx-2.patch` modifies LTX-2 source files; the patch header lists them. SAM 3 is covered by its own
+license.
