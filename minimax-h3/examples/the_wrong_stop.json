@@ -1,0 +1,68 @@
+{
+  "id": "the_wrong_stop",
+  "title": "The Wrong Stop",
+  "seed": 3103,
+  "width": 1280,
+  "height": 736,
+  "num_frames": 243,
+  "num_inference_steps": 24,
+  "carrier_references": "carrier_references_wrong_stop.json",
+  "stage1": {
+    "quiet_blend": 0.6
+  },
+  "video_prompt": "integrated_multimodal_description: [Shot 1] Live-action intimate travel comedy with deep burgundy upholstery, polished walnut and soft amber reading lamps. A medium two-shot frames a woman in a mustard cardigan on the left and a man in a dark teal shirt on the right, seated opposite one another beside a broad train window. Blue predawn landscape slides smoothly past outside. Both faces remain unobstructed, with subtle moving window reflections on their cheeks. The camera trucks right with small amplitude at slow speed while preserving the two-shot. The woman lowers a folded route map and looks sharply at the man; he meets her gaze with a sheepish half-smile. The woman in the mustard cardigan (S1) has this delivery: An adult female voice in a clear middle register, lively intimate speech, crisp questioning accents and quick connected phrases. The man in the dark teal shirt (S2) has this delivery: An adult male voice with a soft low register and a slight sleepy rasp, intimate relaxed delivery that becomes playfully persuasive. From 0.55 to 2.05 seconds, the woman in the mustard cardigan (S1) speaks with synchronized mouth movement. A quick burst of startled disbelief, rising at the end rather than sounding angry. <d>[English] Was that our stop back there?</d> From 2.00 to 3.45 seconds, the man in the dark teal shirt (S2) speaks with synchronized mouth movement. Begin before the question fully resolves; sheepish on “yes”, then brighten into a mischievous smile. <d>[English] Technically, yes. Lovely sunrise, though.</d> From 3.45 to 4.85 seconds, the woman in the mustard cardigan (S1) speaks with synchronized mouth movement. Mock accusation with an audible smile; brisk and light, stressing “enjoying”. <d>[English] You're enjoying this, aren't you?</d> From 4.85 to 6.45 seconds, the man in the dark teal shirt (S2) speaks with synchronized mouth movement. A quick honest admission, then a warm persuasive invitation with a gentle downward finish. <d>[English] A little. Stay one more stop.</d> Each line answers the preceding one with immediate conversational intent; the listening faces react with their eyes and eyebrows. Her mock frown relaxes into a smile. She folds the map into her lap, and they turn toward the sunrise together with their lips at rest.\n\noverall_soundscape: Continuous low rolling train-wheel rumble with a restrained, regular rail rhythm and soft enclosed-carriage resonance.\n\nnon_diegetic_music: A quiet instrumental fingerpicked acoustic-guitar score at 100 BPM, warm nylon-string tone and a simple flowing arpeggio, sustained softly throughout.",
+  "stems": [
+    {
+      "id": "traveler",
+      "prompt": "integrated_multimodal_description: [Shot 1] An adult woman speaks in a clear middle register with a warm, slightly breathy lower edge. The first line starts with a quick startled onset and rises into incredulous questioning, its middle words connected closely together. Her initial surprise feels small and personal. By the next line she has understood the joke: her voice becomes brighter, a smile opens the vowels and the accusation sounds affectionate. Give the emphasized word a playful lengthening, then let the tag question fall softly with an intimate, knowing tone. Keep the overall phrasing brisk while allowing this small expressive variation in word length and a natural quiet breath between her turns. Close, softly recorded speech with a short, warm enclosed-space resonance. From 0.55 to 2.05 seconds, the speaker (S1) says: <d>[English] Was that our stop back there?</d> From 3.45 to 4.85 seconds, the speaker (S1) says: <d>[English] You're enjoying this, aren't you?</d>\n\noverall_soundscape: Natural breath onsets and subtle changes in vocal grain remain audible within the close speech recording.\n\nnon_diegetic_music: N/A",
+      "volume": 1.0,
+      "windows": [
+        {
+          "start": 0.55,
+          "end": 2.05,
+          "text": "Was that our stop back there?"
+        },
+        {
+          "start": 3.45,
+          "end": 4.85,
+          "text": "You're enjoying this, aren't you?"
+        }
+      ],
+      "carrier_group": "female_speech",
+      "sam_prompt": "woman in the mustard cardigan"
+    },
+    {
+      "id": "partner",
+      "prompt": "integrated_multimodal_description: [Shot 1] An adult man speaks in a soft low register with a slight sleepy rasp, rounded vowels and gentle breath at the ends of phrases. The first reply begins sheepishly: the opening word is quick and understated, followed by a tiny hesitation before the admission. He then brightens, with an audible half-smile and a lightly lifted pitch as he redirects attention. In the later reply, the brief admission is amused and self-aware; the invitation that follows is warmer, more sincere and softly persuasive. Keep the lines compact and connected, but distinguish these emotional shifts through breath pressure, stress and pitch. The final words settle into a relaxed downward cadence. Close, softly recorded speech with a short, warm enclosed-space resonance. From 2.00 to 3.45 seconds, the speaker (S2) says: <d>[English] Technically, yes. Lovely sunrise, though.</d> From 4.85 to 6.45 seconds, the speaker (S2) says: <d>[English] A little. Stay one more stop.</d>\n\noverall_soundscape: Natural breath onsets and subtle changes in vocal grain remain audible within the close speech recording.\n\nnon_diegetic_music: N/A",
+      "volume": 1.0,
+      "windows": [
+        {
+          "start": 2.0,
+          "end": 3.45,
+          "text": "Technically, yes. Lovely sunrise, though."
+        },
+        {
+          "start": 4.85,
+          "end": 6.45,
+          "text": "A little. Stay one more stop."
+        }
+      ],
+      "carrier_group": "male_speech",
+      "sam_prompt": "man in the dark teal shirt"
+    },
+    {
+      "id": "train",
+      "prompt": "integrated_multimodal_description: [Shot 1] A continuous recording of Continuous low rolling train-wheel rumble with a restrained, regular rail rhythm and soft enclosed-carriage resonance.\n\noverall_soundscape: Continuous low rolling train-wheel rumble with a restrained, regular rail rhythm and soft enclosed-carriage resonance.\n\nnon_diegetic_music: N/A",
+      "volume": 0.35,
+      "windows": [],
+      "video_routing": "background_only"
+    },
+    {
+      "id": "acoustic_guitar",
+      "prompt": "integrated_multimodal_description: [Shot 1] A continuous instrumental recording with an even low dynamic level.\n\noverall_soundscape: The close recording has a clean, softly reverberant acoustic character.\n\nnon_diegetic_music: A quiet instrumental fingerpicked acoustic-guitar score at 100 BPM, warm nylon-string tone and a simple flowing arpeggio, sustained softly throughout.",
+      "volume": 0.35,
+      "windows": [],
+      "video_routing": "background_only"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "id": "the_rooftop_reservation",
+  "title": "The Rooftop Reservation",
+  "seed": 3101,
+  "width": 768,
+  "height": 448,
+  "num_frames": 243,
+  "num_inference_steps": 24,
+  "carrier_references": "carrier_references.json",
+  "video_prompt": "integrated_multimodal_description: [Shot 1] Live-action romantic comedy photographed on a 35 mm lens. A medium two-shot frames a woman in an emerald satin jacket on the left and a man in a cream dinner jacket on the right, standing just inside a rooftop conservatory. Wet glass, copper window frames, climbing jasmine and distant amber city lights fill the background. Their faces remain in the same plane and clearly visible. The camera pushes in with small amplitude at slow speed. The woman initially holds a brass door handle, releases it, and raises an eyebrow; the man keeps his hands visible and answers her with an easy grin. The woman in the emerald satin jacket (S1) has this delivery: A bright adult female voice with a warm middle register, smiling skepticism, conversational contractions and quick, connected phrasing. The man in the cream dinner jacket (S2) has this delivery: A lightly raspy adult male voice with a warm middle-low register, playful confidence and quick, relaxed phrasing. From 0.65 to 2.05 seconds, the woman in the emerald satin jacket (S1) speaks with synchronized mouth movement. Amused disbelief; lift the pitch on “whole roof” and keep the question light. <d>[English] You booked the whole roof?</d> From 2.05 to 3.55 seconds, the man in the cream dinner jacket (S2) speaks with synchronized mouth movement. An immediate, dry answer through a small smile; lightly stress “without rain”. <d>[English] Just the bit without rain.</d> From 3.50 to 5.20 seconds, the woman in the emerald satin jacket (S1) speaks with synchronized mouth movement. Cut in with affectionate mockery, an audible smile and a falling, teasing finish. <d>[English] That's a very generous puddle.</d> From 5.20 to 6.85 seconds, the man in the cream dinner jacket (S2) speaks with synchronized mouth movement. Answer warmly, with quick confidence and a gentle invitation on “our table”. <d>[English] Come on, it's our table.</d> From 0.10 to 1.30 seconds, the door settles shut with one firm wooden closing thud. Each line answers the preceding one with immediate conversational intent; the listening faces react with their eyes and eyebrows. The man offers his arm; she accepts with a restrained smile, and both look toward a small linen-covered table. Their mouths settle naturally after the last reply.\n\noverall_soundscape: Steady soft rain pattering on glass overhead, with fine irregular droplets and diffuse exterior depth. One firm wooden door closing with a short rounded thud and a brief wooden resonance.\n\nnon_diegetic_music: A quiet instrumental jazz-guitar score: soft clean plucked chords and a lightly syncopated walking phrase at 104 BPM, sustained throughout at a low level.",
+  "stems": [
+    {
+      "id": "woman",
+      "prompt": "integrated_multimodal_description: [Shot 1] A woman in her early thirties speaks in a warm middle register with a bright, lightly husky edge. Her voice carries an audible smile: buoyant vowels, clear but unforced consonants and small, lively pitch changes. The emotion is affectionate disbelief that turns into teasing amusement, with intimate, conversational projection. She speaks in connected conversational phrases, letting unstressed words pass quickly and giving the punchline a little weight. The first question rises lightly, as though she is genuinely surprised; the later reply has a dry, amused downward finish. A tiny breath catches before the teasing reply, and the last vowel relaxes into a smile. Close and natural, with a short, soft indoor reflection and a clear foreground voice. From 0.65 to 2.05 seconds, the speaker (S1) says: <d>[English] You booked the whole roof?</d> From 3.50 to 5.20 seconds, the speaker (S1) says: <d>[English] That's a very generous puddle.</d>\n\noverall_soundscape: Natural breath onsets and subtle changes in vocal grain remain audible within the close speech recording.\n\nnon_diegetic_music: N/A",
+      "volume": 1.0,
+      "windows": [
+        {
+          "start": 0.65,
+          "end": 2.05,
+          "text": "You booked the whole roof?"
+        },
+        {
+          "start": 3.5,
+          "end": 5.2,
+          "text": "That's a very generous puddle."
+        }
+      ],
+      "carrier_group": "female_speech",
+      "sam_prompt": "woman in the emerald satin jacket"
+    },
+    {
+      "id": "man",
+      "prompt": "integrated_multimodal_description: [Shot 1] A man in his early thirties speaks in a warm middle-low register with a soft grain in the chest tone and a faint airy edge at phrase endings. He sounds charmingly caught out but pleased with himself. His smile is audible in the slightly lifted vowels, while the rhythm remains easy and intimate. The first reply lands as a quick deadpan joke: a light onset, compact wording and a small falling cadence on its final phrase. The second reply becomes warmer and more inviting; the initial words come out lightly, then the last two words receive gentle emphasis. Keep the breath flow continuous through each short line, with relaxed consonant releases and a small spontaneous change in pitch. Close and natural, with a short, soft indoor reflection and a clear foreground voice. From 2.05 to 3.55 seconds, the speaker (S2) says: <d>[English] Just the bit without rain.</d> From 5.20 to 6.85 seconds, the speaker (S2) says: <d>[English] Come on, it's our table.</d>\n\noverall_soundscape: Natural breath onsets and subtle changes in vocal grain remain audible within the close speech recording.\n\nnon_diegetic_music: N/A",
+      "volume": 1.0,
+      "windows": [
+        {
+          "start": 2.05,
+          "end": 3.55,
+          "text": "Just the bit without rain."
+        },
+        {
+          "start": 5.2,
+          "end": 6.85,
+          "text": "Come on, it's our table."
+        }
+      ],
+      "carrier_group": "male_speech",
+      "sam_prompt": "man in the cream dinner jacket"
+    },
+    {
+      "id": "rain",
+      "prompt": "integrated_multimodal_description: [Shot 1] A continuous recording of Steady soft rain pattering on glass overhead, with fine irregular droplets and diffuse exterior depth.\n\noverall_soundscape: Steady soft rain pattering on glass overhead, with fine irregular droplets and diffuse exterior depth.\n\nnon_diegetic_music: N/A",
+      "volume": 0.35,
+      "windows": [],
+      "video_routing": "background_only"
+    },
+    {
+      "id": "jazz_guitar",
+      "prompt": "integrated_multimodal_description: [Shot 1] A continuous instrumental recording with an even low dynamic level.\n\noverall_soundscape: The close recording has a clean, softly reverberant acoustic character.\n\nnon_diegetic_music: A quiet instrumental jazz-guitar score: soft clean plucked chords and a lightly syncopated walking phrase at 104 BPM, sustained throughout at a low level.",
+      "volume": 0.35,
+      "windows": [],
+      "video_routing": "background_only"
+    },
+    {
+      "id": "door_close",
+      "prompt": "integrated_multimodal_description: [Shot 1] From 0.10 to 1.30 seconds, One firm wooden door closing with a short rounded thud and a brief wooden resonance.\n\noverall_soundscape: A short dry wooden closing impact with a compact resonance tail.\n\nnon_diegetic_music: N/A",
+      "volume": 1.0,
+      "windows": [
+        {
+          "start": 0.1,
+          "end": 1.3
+        }
+      ],
+      "carrier_group": "door_knock",
+      "sam_prompt": "wooden door"
+    }
+  ]
+}

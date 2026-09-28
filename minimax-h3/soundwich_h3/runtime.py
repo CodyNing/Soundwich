@@ -29,7 +29,8 @@ def setup_gpu():
     total = torch.cuda.get_device_properties(0).total_memory / 2**30
     if total < 79:
         print(f'Warning: GPU 0 has {total:.0f} GiB; a 4-stem 768x448 scene peaks near 73 GiB allocated '
-              'with CPU offload. Expect out-of-memory errors below 80 GiB.', flush=True)
+              'with CPU offload, and more stems or larger frames need more (see README). '
+              'Expect out-of-memory errors below 80 GiB.', flush=True)
     return torch.device('cuda:0')
 
 

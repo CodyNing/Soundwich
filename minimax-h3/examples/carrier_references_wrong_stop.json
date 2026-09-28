@@ -1,0 +1,20 @@
+{
+  "female_speech": {
+    "role": "activation",
+    "prompt": "high quality clear female voice speaking loudly",
+    "seed": 42,
+    "quantile": 0.7
+  },
+  "male_speech": {
+    "role": "activation",
+    "prompt": "male voice speaking loudly",
+    "seed": 42,
+    "quantile": 0.7
+  },
+  "quiet": {
+    "role": "suppression",
+    "prompt": "integrated_multimodal_description: [Shot 1] A still, empty room with soft daylight and a stationary view.\n\noverall_soundscape: Near-silent room tone, extremely faint and steady.\n\nnon_diegetic_music: N/A",
+    "seed": 1775,
+    "quantile": 0.7
+  }
+}

@@ -16,7 +16,7 @@ from diffusers.modular_pipelines.modular_pipeline import PipelineState
 from diffusers.utils.export_utils import encode_video
 
 from .batch import BatchExpansion, BatchLayout, NativeCapture, pad_contexts
-from .refinement import initialize_refinement
+from .refinement import initialize_fixed_audio, initialize_refinement
 
 FPS = 24
 
@@ -45,7 +45,8 @@ def generate(pipe, scene, destination, *, text_cache, audio_hook=None, native_ca
 
     Batch mode: row 0 carries the video prompt, rows 1..N the stem prompts.
     `native_capture`: one unmodified row with the single stem prompt (carrier references).
-    `scene['refinement']`: start from a saved generation re-noised to the given sigmas.
+    `scene['refinement']`: start from a saved generation re-noised to the given sigmas, or, with
+    `fixed_audio`, re-noise only its video and keep the given clean audio fixed (editing).
     """
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=False)
@@ -67,12 +68,15 @@ def generate(pipe, scene, destination, *, text_cache, audio_hook=None, native_ca
     initial = torch.randn(1, pipe.vae_latent_channels, nf, nh, nw, generator=generator).to(device)
     video = patchify_video_latents(initial, pipe.patch_size)[None]
     audio = torch.randn(len(scene['stems']), 2*na, pipe.audio_latent_channels, generator=generator).to(device)
+    audio_scheduler = pipe.audio_scheduler
     pipe.scheduler.set_timesteps(scene['num_inference_steps'], device=device)
-    pipe.audio_scheduler.set_timesteps(scene['num_inference_steps'], device=device)
+    audio_scheduler.set_timesteps(scene['num_inference_steps'], device=device)
     refinement = None
-    if scene.get('refinement'):
+    if scene.get('refinement', {}).get('fixed_audio'):
+        video, audio, audio_scheduler, refinement = initialize_fixed_audio(pipe, scene, video, audio)
+    elif scene.get('refinement'):
         video, audio, refinement = initialize_refinement(pipe, scene, video, audio)
-    schedule = {'video': pipe.scheduler.timesteps.cpu().tolist(), 'audio': pipe.audio_scheduler.timesteps.cpu().tolist()}
+    schedule = {'video': pipe.scheduler.timesteps.cpu().tolist(), 'audio': audio_scheduler.timesteps.cpu().tolist()}
     if audio_hook is not None:
         audio_hook.validate(schedule, na, len(pipe.transformer.transformer_blocks))
     if entity_masks is not None:
@@ -82,11 +86,11 @@ def generate(pipe, scene, destination, *, text_cache, audio_hook=None, native_ca
                                 entity_masks=entity_masks))
     trace = []
     try:
-        for step, (vt, at) in enumerate(zip(pipe.scheduler.timesteps, pipe.audio_scheduler.timesteps)):
+        for step, (vt, at) in enumerate(zip(pipe.scheduler.timesteps, audio_scheduler.timesteps)):
             tick = time.monotonic()
             vp, ap = expansion(video, audio, text, vt, at, step)
             video = pipe.scheduler.step(vp.float(), vt, video, return_dict=False)[0]
-            audio = pipe.audio_scheduler.step(ap.float(), at, audio, return_dict=False)[0]
+            audio = audio_scheduler.step(ap.float(), at, audio, return_dict=False)[0]
             trace.append({'step': step, 'seconds': time.monotonic()-tick})
             print(f'Denoise {step+1}/{len(pipe.scheduler.timesteps)} {trace[-1]["seconds"]:.1f}s', flush=True)
     finally:

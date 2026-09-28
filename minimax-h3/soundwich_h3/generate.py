@@ -1,6 +1,6 @@
 """Soundwich on MiniMax-H3: carriers -> Stem Formation -> SAM entity masks -> Scene Integration.
 
-    python -m soundwich_h3.generate --scene examples/the_last_button.json
+    python -m soundwich_h3.generate --scene examples/the_rooftop_reservation.json
 
 Carrier banks and text embeddings are cached (SOUNDWICH_H3_CACHE, default ./cache).
 Outputs: <output-dir>/{stage1,sam,stage2}/ with per-stem WAVs, mix.wav, sample.mp4, latents.pt.
@@ -37,6 +37,19 @@ def load_scene(path, seed=None):
             raise ValueError(f'Scene is missing {key!r}')
     if seed is not None:
         scene['seed'] = seed
+    check_stems(scene)
+    references = json.loads((path.parent/scene['carrier_references']).read_text())
+    groups = sorted({s['carrier_group'] for s in scene['stems'] if s.get('carrier_group')} | {QUIET_GROUP})
+    for group in groups:
+        ref = references.get(group)
+        if ref is None or not {'role', 'prompt', 'seed', 'quantile'} <= ref.keys():
+            raise ValueError(f'Carrier reference {group!r} is missing or incomplete')
+        if ref['role'] != ('suppression' if group == QUIET_GROUP else 'activation'):
+            raise ValueError(f'Carrier reference {group!r} has the wrong role')
+    return scene, {g: references[g] for g in groups}
+
+
+def check_stems(scene):
     ids = [s['id'] for s in scene['stems']]
     if len(set(ids)) != len(ids) or not all('prompt' in s for s in scene['stems']):
         raise ValueError('Stems need unique ids and a prompt')
@@ -47,15 +60,6 @@ def load_scene(path, seed=None):
                 raise ValueError(f'Window of {stem["id"]!r} must lie within the {duration:.3f}s clip')
         if stem.get('windows') and not stem.get('carrier_group'):
             raise ValueError(f'Controlled stem {stem["id"]!r} needs a carrier_group')
-    references = json.loads((path.parent/scene['carrier_references']).read_text())
-    groups = sorted({s['carrier_group'] for s in scene['stems'] if s.get('carrier_group')} | {QUIET_GROUP})
-    for group in groups:
-        ref = references.get(group)
-        if ref is None or not {'role', 'prompt', 'seed', 'quantile'} <= ref.keys():
-            raise ValueError(f'Carrier reference {group!r} is missing or incomplete')
-        if ref['role'] != ('suppression' if group == QUIET_GROUP else 'activation'):
-            raise ValueError(f'Carrier reference {group!r} has the wrong role')
-    return scene, {g: references[g] for g in groups}
 
 
 def settings(scene):

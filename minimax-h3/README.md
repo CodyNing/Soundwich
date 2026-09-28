@@ -16,12 +16,23 @@ video, and audio, so no separate scene stem is used. A scene is generated in thr
    for 23 evaluations with entity routing: each stem's audio sees only its owner's video, and owner video sees the
    stem's audio. Quiet-carrier suppression remains active outside windows, and no activation carriers are used.
 
-Every stem is decoded separately, then mixed.
+Every stem is decoded separately, then mixed. A finished run can then be edited per stem (retiming or replacing a
+source) and its video refined on the edited audio; see [Editing stems](#editing-stems).
 
 ## Requirements
 
-- Linux with one CUDA GPU with at least 80 GB of memory. The 4-stem example peaks at about 73 GiB allocated in
-  Stage 1 and 56 GiB in Stage 2, with automatic CPU offload. Plan for about 220 GB of host RAM.
+- Linux with one CUDA GPU. Peak GPU allocations measured with automatic CPU offload:
+
+  | Run | Stage 1 | Stage 2 |
+  | --- | --- | --- |
+  | 4 stems, 768×448 | 73 GiB | 56 GiB |
+  | *The Rooftop Reservation* (5 stems, 768×448) | 89 GiB | not measured |
+  | *The Wrong Stop* (4 stems, 1280×736) | 122 GiB | not measured |
+
+  4-stem 768×448 scenes run on 80 GB GPUs. The two example peaks were measured on a GPU with 128 GiB available, and
+  whether *The Rooftop Reservation* fits in 80 GB is untested. Stage 1 of *The Wrong Stop* takes about 100 s per
+  step, against about 25 s at 768×448. Editing refinement at 768×448 peaked at 75–80 GiB (2–3 stems). Plan for
+  about 220 GB of host RAM.
 - Python ≥ 3.10 (developed on 3.12), git, and about 135 GB of disk for the checkpoint.
 - A separate Python environment for [SAM 3](https://github.com/facebookresearch/sam3) with the SAM 3.1 multiplex
   video predictor.
@@ -62,22 +73,32 @@ export SOUNDWICH_SAM3_CHECKPOINT=/path/to/sam3.1_multiplex.pt # optional, otherw
 SAM runs as a subprocess through the shared `../common/sam3_video_backend.py`, after the H3 pipeline has been
 released.
 
-## Run the example
+## Run the examples
 
 ```bash
 cd minimax-h3
-.venv/bin/python -m soundwich_h3.generate --scene examples/the_last_button.json --dry-run   # check config, no GPU
-.venv/bin/python -m soundwich_h3.generate --scene examples/the_last_button.json
+.venv/bin/python -m soundwich_h3.generate --scene examples/the_rooftop_reservation.json --dry-run   # no GPU
+.venv/bin/python -m soundwich_h3.generate --scene examples/the_rooftop_reservation.json
+.venv/bin/python -m soundwich_h3.generate --scene examples/the_wrong_stop.json   # 1280×736, see Requirements
 ```
 
-The example is *The Last Button* from the project page: a groom and a tailor with two dialogue turns each, a viola,
-and street ambience.
+Both examples are from the project page:
 
-The first run records three carriers, each a short native single-row H3 generation. These are
-`male_speech` (activation) and `quiet` on the Stage-1 schedule, plus `quiet` again on the Stage-2 schedule, made
-by refining the quiet reference itself. They are cached in `cache/carriers/` (`SOUNDWICH_H3_CACHE`), together
-with the text embeddings, and later runs reuse them. The other flags are `--output-dir`, `--seed` (Stage 2 uses
-seed + 1), and `--stage1-only`. Completed stages in the output directory are reused.
+- *The Rooftop Reservation* (768×448, seed 3101): a woman and a man with two lines each, a door closing, rain on
+  the glass, and a jazz-guitar score.
+- *The Wrong Stop* (1280×736, seed 3103): two travelers on a sleeper train with two lines each, train ambience,
+  and an acoustic-guitar score. It uses its own carrier references (`carrier_references_wrong_stop.json`, a
+  different quiet prompt) and a Stage-1 quiet blend of 0.6.
+
+The project page shows the Stage-1 result (`stage1/`) of both.
+
+The first run records the carriers, each a short native single-row H3 generation. These are the activation
+carriers of the scene's stems (`female_speech`, `male_speech`, and `door_knock` for the door) and `quiet` on the
+Stage-1 schedule, plus `quiet` again on the Stage-2 schedule, made by refining the quiet reference itself. Carriers
+depend on the geometry, so each example records its own. They are cached in `cache/carriers/`
+(`SOUNDWICH_H3_CACHE`), together with the text embeddings, and later runs reuse them. The other flags are
+`--output-dir`, `--seed` (Stage 2 uses seed + 1), and `--stage1-only`. Completed stages in the output directory are
+reused.
 
 ### Outputs
 
@@ -93,15 +114,55 @@ Everything for one run is written to `outputs/<scene id>-seed<seed>/`:
 
 ### Reviewing SAM masks
 
-A text prompt alone often does not isolate the right person. Check `sam/overlays/` after every run. For a wrong or
-unstable mask, add reviewed clicks to that stem in the scene: `sam_point_frame` (source frame index) and
-`sam_points` (normalized `x`/`y` in [0, 1] with `label: positive` or `negative`). Then delete `sam/` and `stage2/`
-and rerun; Stage 1 is reused.
+A text prompt alone often does not isolate the right person. The examples provide text prompts only (the entity
+descriptions from their video prompts, and `wooden door` for the door close), without reviewed clicks. Check
+`sam/overlays/` after every run. For a wrong or unstable mask, add reviewed clicks to that stem in the scene:
+`sam_point_frame` (source frame index) and `sam_points` (normalized `x`/`y` in [0, 1] with `label: positive` or
+`negative`). Then delete `sam/` and `stage2/` and rerun; Stage 1 is reused.
+
+## Editing stems
+
+A completed run (Stage 1, SAM masks, and Stage 2) can be edited without regenerating the other stems:
+
+```bash
+.venv/bin/python -m soundwich_h3.edit --run outputs/the_rooftop_reservation-seed3101 \
+    --edit examples/edits/rooftop_later_reply.json --dry-run   # validate and print the plan, no GPU
+.venv/bin/python -m soundwich_h3.edit --run outputs/the_rooftop_reservation-seed3101 \
+    --edit examples/edits/rooftop_later_reply.json
+```
+
+The example moves the man's reply "Come on, it's our table." from 5.20–6.85 s to 7.20–8.85 s. An edit file has
+`edits`, a list with one entry per edited stem (`stem`, plus `retime` and/or `replace`):
+
+- `retime`: a list of `{"window": i, "start": seconds}`. The clip of window *i* is moved within the stem's Stage-2
+  audio latents (40 tokens per second, both stereo channels), and the tokens between the old and the new position
+  shift to fill the gap. The window moves with it. The shifted span may not contain another window of the same
+  stem. `window` may be omitted for a stem with a single window.
+- `replace`: `{"prompt": ..., "seed": ..., "windows": [...]}` (`windows` optional). Stage 1 is run for this stem
+  alone with the new source prompt, seed, and windows, and its audio latents replace the stem's. A replaced stem
+  can also be retimed.
+
+An optional `video_prompt_substitutions` list of `[old, new]` pairs edits the shared video prompt, e.g. to change
+a spoken line there too:
+
+```json
+{
+  "edits": [{"stem": "man", "replace": {"seed": 4101, "prompt": "integrated_multimodal_description: [Shot 1] ..."}}],
+  "video_prompt_substitutions": [["Come on, it's our table.", "Shall we sit down?"]]
+}
+```
+
+The other stems keep their Stage-2 audio. The edited audio latents are then held clean and fixed, while the saved
+Stage-1 video is re-noised to σ<sub>v</sub>=0.95 (seed + 1) and refined for 23 evaluations. This uses the run's SAM
+masks, the revised windows, and quiet suppression (0.30/0.25), without activation carriers. The first edit records
+one more carrier: `quiet` refined with its own audio fixed. Results are written to
+`<run>/edits/<edit file name>/`: `edited/` (video, stems, mix, latents), `fixed_audio.pt`, `takes/<stem>/`
+for replacements, and the resolved `edit.json`.
 
 ## Scene format
 
-See `examples/the_last_button.json`. Geometry must be `num_frames` = 17k+5 and `width`/`height` multiples of 32.
-The paper uses 243 frames (10.125 s at 24 fps), 768×448, and `num_inference_steps` 24. A scene has:
+See `examples/the_rooftop_reservation.json`. Geometry must be `num_frames` = 17k+5 and `width`/`height`
+multiples of 32. The paper uses 243 frames (10.125 s at 24 fps), 768×448, and `num_inference_steps` 24. A scene has:
 
 - `seed`, `width`, `height`, `num_frames`, `num_inference_steps`, and `video_prompt` (the shared video row's
   prompt).
