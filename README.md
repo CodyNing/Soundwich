@@ -63,27 +63,104 @@ Soundwich runs inside the sampler of a frozen model. No weights are trained or f
 | Backbone | Separate stems | Source-specific guidance | Timeline control | Scene broadcast | Entity routing | Folder |
 |---|:---:|:---:|:---:|:---:|:---:|---|
 | [LTX-2.5](https://github.com/Lightricks/LTX-2) | ✅ | ✅ | ✅ | ✅ | ✅ | [`ltx-2.5/`](ltx-2.5) |
-| [MiniMax H3](https://github.com/MiniMax-AI/MiniMax-H3) | ✅ | ✅ | ✅ | via shared video¹ | ✅ | [`minimax-h3/`](minimax-h3) |
+| [MiniMax H3](https://github.com/MiniMax-AI/MiniMax-H3) | ✅ | isolated prompts¹ | ✅ | via shared video² | ✅ | [`minimax-h3/`](minimax-h3) |
 | [Ovi 1.1](https://github.com/character-ai/Ovi) | ✅ | ✅ | ✅ | — | — | [`ovi-1.1/`](ovi-1.1) |
 
-<sub>¹ H3 attends jointly over text, video, and audio. Shared video features already carry scene context between sources, so no separate scene stem is used.</sub>
+<sub>¹ H3's checkpoint is CFG-distilled, so each stem gets an isolated source prompt within a neutral scene context instead of a negative prompt.
+² H3 attends jointly over text, video, and audio. Shared video features already carry scene context between sources, so no separate scene stem is used.</sub>
 
 Each folder is self-contained: `setup.sh` fetches the upstream model code at a pinned commit, and one command runs
 the full method on the included example scene.
 
 ## Quick start
 
-<!-- QUICKSTART -->
+Pick a backbone, run its `setup.sh`, download the checkpoints listed in its README, and generate the included
+example. Every CLI supports `--dry-run` / `--validate-only` to check a scene without loading models.
+
+<table>
+<tr><th>LTX-2.5 · one 32 GB GPU</th><th>MiniMax H3 · one 80 GB GPU</th><th>Ovi 1.1 · one 32 GB GPU</th></tr>
+<tr valign="top"><td>
+
+```bash
+cd ltx-2.5 && ./setup.sh
+export SOUNDWICH_SAM3_PYTHON=/path/to/sam3/python
+third_party/LTX-2/.venv/bin/python \
+  -m soundwich_ltx.generate \
+  --scene examples/neon_biology_lab.yaml
+```
+
+</td><td>
+
+```bash
+cd minimax-h3 && ./setup.sh
+export SOUNDWICH_SAM3_PYTHON=/path/to/sam3/python
+.venv/bin/python \
+  -m soundwich_h3.generate \
+  --scene examples/the_last_button.json
+```
+
+</td><td>
+
+```bash
+cd ovi-1.1 && ./setup.sh
+.venv/bin/python \
+  -m soundwich_ovi.generate \
+  --scene examples/ticket_counter.yaml
+```
+
+</td></tr>
+</table>
+
+Each run records and caches the carriers the scene needs on first use, then writes every stem as its own WAV next to
+the mixed video. Entity routing on LTX-2.5 and H3 runs [SAM 3](https://github.com/facebookresearch/sam3) in its
+own environment as a subprocess. See each folder's README for checkpoints, outputs, and settings.
 
 ## Describing a scene
 
-A scene file lists the visual prompt, the sound sources, and when each source should be active. Abridged example:
+A scene file lists the visual prompt, the sound sources, who makes each sound on screen, and when each source
+should be active. Abridged from the LTX-2.5 example:
 
-<!-- SCENE_EXAMPLE -->
+```yaml
+visual:
+  positive: In a softly glowing biology lab, a woman in a silver jacket stands at the left and a white
+    humanoid robot at the right, while a brown dog and an orange cat sit between them ...
+
+entity_groups:                  # one cached activation carrier per kind of sound
+  dog_bark:      {carrier: {positive: A dog barks loudly and repeatedly., seed: 31}}
+  female_speech: {carrier: {positive: high quality clear female voice speaking loudly, seed: 42}}
+
+sound_entities:                 # who owns each sound on screen (tracked with SAM 3)
+- {id: lab_dog,   group: dog_bark,      sam_prompt: brown dog}
+- {id: scientist, group: female_speech, sam_prompt: woman in silver jacket}
+
+stems:                          # one audio stem per source, each with its own timeline
+- id: dog_barks
+  entity: lab_dog
+  positive: loud natural dog barking
+  negative: cat meowing, speech, music
+  windows: [{start: 0.4, end: 2.8}]
+- id: scientist_voice
+  entity: scientist
+  positive: clear high-pitched adult female voice says "Both animals are calm now"
+  negative: deep low-pitched adult male voice, dog barking, cat meowing, music
+  windows: [{start: 3.1, end: 6.0}]
+```
+
+The exact schema differs slightly per backbone. The complete examples are
+[`ltx-2.5/examples/neon_biology_lab.yaml`](ltx-2.5/examples/neon_biology_lab.yaml),
+[`minimax-h3/examples/the_last_button.json`](minimax-h3/examples/the_last_button.json), and
+[`ovi-1.1/examples/ticket_counter.yaml`](ovi-1.1/examples/ticket_counter.yaml).
 
 ## Repository layout
 
-<!-- LAYOUT -->
+```
+Soundwich/
+├── ltx-2.5/       soundwich_ltx: full method on LTX-2.5 (+ patch for the pinned LTX-2 commit)
+├── minimax-h3/    soundwich_h3:  full method on MiniMax H3 via the pinned diffusers commit
+├── ovi-1.1/       soundwich_ovi: stems, source guidance, and timeline control on Ovi 1.1
+├── common/        SAM 3 video-mask backend shared by LTX-2.5 and H3
+└── assets/        README media
+```
 
 ## Citation
 
