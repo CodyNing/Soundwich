@@ -61,6 +61,8 @@ DEFAULT_METHOD_SETTINGS: dict[str, Any] = {
         "scene_gather_fraction": 0.50,
         "scene_gather_strength": 1.0,
         "real_to_scene_strength": 0.0,
+        # How the gathered stems are summed: raw_sum or rms_sum (RMS-balanced).
+        "scene_aggregation": "raw_sum",
     },
     "stage2": {
         "start_sigma": 0.95,
@@ -470,6 +472,7 @@ def compile_scene(  # noqa: PLR0915
             "real_to_scene_strength": float(stage1["real_to_scene_strength"]),
             "scene_self_attention_strength": float(stage1["scene_gather_strength"]),
             "scene_self_attention_schedule": _gather_schedule(float(stage1["scene_gather_fraction"])),
+            "aggregation": str(stage1["scene_aggregation"]),
         },
         "stems": stems,
         "sam3": {**DEFAULT_SAM3, **(scene.get("sam") or {})},

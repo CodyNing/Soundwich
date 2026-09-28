@@ -10,6 +10,7 @@ from typing import Any, Literal
 Task = Literal["generate", "record_carrier"]
 CarrierRole = Literal["activation", "suppression"]
 SceneSelfAttentionDirection = Literal["real_to_scene", "scene_to_real"]
+SceneAggregation = Literal["raw_sum", "rms_sum"]
 
 
 def _mapping(value: object, name: str) -> dict[str, Any]:
@@ -316,6 +317,10 @@ class SceneCouplingConfig:
     real stem queries its own K/V concatenated with the scene K/V
     (``scene_to_real`` direction). After self-attention, ``real_to_scene_strength``
     blends the gated real-stem sum back into the scene lane.
+
+    ``aggregation`` sets how the gated real stems are summed: ``raw_sum`` adds
+    them as they are; ``rms_sum`` divides each stem by its RMS before adding and
+    rescales the sum by the stems' mean RMS.
     """
 
     enabled: bool = False
@@ -324,12 +329,16 @@ class SceneCouplingConfig:
     real_to_scene_strength: float = 0.0
     scene_self_attention_strength: float = 1.0
     scene_self_attention_schedule: StrengthSchedule = field(default_factory=StrengthSchedule)
+    aggregation: SceneAggregation = "raw_sum"
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> "SceneCouplingConfig":
         direction = str(raw.get("self_attention_direction", "real_to_scene")).strip().lower()
         if direction not in {"real_to_scene", "scene_to_real"}:
             raise ValueError("scene_coupling.self_attention_direction must be real_to_scene or scene_to_real")
+        aggregation = str(raw.get("aggregation", "raw_sum")).strip().lower()
+        if aggregation not in {"raw_sum", "rms_sum"}:
+            raise ValueError("scene_coupling.aggregation must be raw_sum or rms_sum")
         value = cls(
             enabled=bool(raw.get("enabled", False)),
             self_attention_direction=direction,  # type: ignore[arg-type]
@@ -337,6 +346,7 @@ class SceneCouplingConfig:
             real_to_scene_strength=float(raw.get("real_to_scene_strength", 0.0)),
             scene_self_attention_strength=float(raw.get("scene_self_attention_strength", 1.0)),
             scene_self_attention_schedule=StrengthSchedule.from_list(raw.get("scene_self_attention_schedule", [])),
+            aggregation=aggregation,  # type: ignore[arg-type]
         )
         for name in ("scene_to_real_strength", "real_to_scene_strength", "scene_self_attention_strength"):
             if not 0 <= getattr(value, name) <= 1:
@@ -372,6 +382,7 @@ class SceneCouplingConfig:
                     "real_to_scene_strength": self.real_to_scene_strength,
                     "scene_self_attention_strength": self.scene_self_attention_strength,
                     "scene_self_attention_schedule": self.scene_self_attention_schedule.summary(),
+                    "aggregation": self.aggregation,
                 }
             )
         return value

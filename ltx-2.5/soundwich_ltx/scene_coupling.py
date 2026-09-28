@@ -212,11 +212,18 @@ class SceneCoupler:
             gates.append(gate.to(dtype=hidden.dtype))
         return torch.stack(gates, dim=0).unsqueeze(-1)
 
-    @staticmethod
-    def _scene_reference(real_hidden: torch.Tensor, gates: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Sum the gated real-stem states without rescaling them."""
-        scene = (real_hidden * gates).sum(dim=0, keepdim=True)
+    def _scene_reference(self, real_hidden: torch.Tensor, gates: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Sum the gated real-stem states, raw or RMS-balanced (``aggregation``)."""
+        if self.config.aggregation == "rms_sum":
+            stem_rms = _rms(real_hidden)
+            normalized = real_hidden / stem_rms.to(real_hidden.dtype)
+        else:
+            stem_rms = None
+            normalized = real_hidden
+        scene = (normalized * gates).sum(dim=0, keepdim=True)
         active_union = gates.amax(dim=0, keepdim=True)
+        if stem_rms is not None:
+            scene = scene * stem_rms.mean(dim=0, keepdim=True).to(scene.dtype)
         return scene, active_union
 
     def _scene_self_attention(

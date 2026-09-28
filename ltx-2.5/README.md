@@ -186,6 +186,7 @@ Key knobs:
 | `stage1.outside_suppression`, `outside_silence_blend` | 0.25, 0.60 | Attenuation and suppression-carrier blend outside a stem's windows |
 | `stage1.window_feather` | 0.02 | Window feathering as a fraction of `duration_seconds` |
 | `stage1.scene_gather_fraction` | 0.50 | Share of Stage-1 steps during which the scene lane gathers the stems |
+| `stage1.scene_aggregation` | `raw_sum` | How the scene lane sums the gated stems: `raw_sum`, or `rms_sum` (each stem RMS-normalized, the sum rescaled by the stems' mean RMS). The paper's main comparison used `rms_sum` for most scenes (Stage 2 always uses `raw_sum`) |
 | `stage2.start_sigma` | 0.95 | Stage-2 starting noise level (8 densified distilled steps) |
 | `stage2.scene_to_real_strength`, `real_to_scene_strength` | 1.0, 0.10 | Scene broadcast and scene update in Stage 2 |
 | `stage2.a2v_active_gain` | 1.0 | Gain on routed A2V updates for SAM-owned video tokens (some scenes benefit from a higher value) |
