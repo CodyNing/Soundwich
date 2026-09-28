@@ -20,15 +20,9 @@ music, effects, and ambience on **separate tracks**. Soundwich is a **training-f
 audio-video model into a generator of multiple synchronized audio stems around one shared video. You control what
 each source sounds like and when it plays. The result can then be retimed, muted, replaced, or remixed one stem at a time.
 
-<div align="center">
+https://github.com/user-attachments/assets/abda9d46-dbcc-4728-9311-83ea6d1ce177
 
-<a href="https://pub-238c8a4431a4476c8eb0f5bd97a3846e.r2.dev/media/demo/20260926/video.mp4">
-  <img src="https://pub-238c8a4431a4476c8eb0f5bd97a3846e.r2.dev/media/demo/20260926/title-poster.jpg" width="72%" alt="Watch the Soundwich demo video">
-</a>
-
-<sub>▶ <b>Watch the demo video</b> (with sound) · more examples with per-stem playback on the <a href="https://soundwich.avdemo.workers.dev/">project page</a></sub>
-
-</div>
+<div align="center"><sub>Demo with sound (7:44) · <a href="https://pub-238c8a4431a4476c8eb0f5bd97a3846e.r2.dev/media/demo/20260926/video.mp4">full-length demo (10:48)</a> · more examples with per-stem playback on the <a href="https://soundwich.avdemo.workers.dev/">project page</a></sub></div>
 
 ## Gallery
 
