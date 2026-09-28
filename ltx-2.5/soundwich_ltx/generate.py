@@ -9,6 +9,7 @@ import argparse
 import json
 import logging
 import os
+import shutil
 from pathlib import Path
 
 import yaml
@@ -17,6 +18,9 @@ from soundwich_ltx.config import MultiStemConfig
 from soundwich_ltx.scene import CompiledScene, carrier_record_config, compile_scene, load_scene
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
+# Recorded carriers shipped with the code, named like cache entries (<name>-<spec hash>). The Stage-2
+# suppression carrier used for the paper predates this code and cannot be re-recorded bit-exactly.
+BUNDLED_CARRIERS = BACKEND_ROOT / "carriers"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -58,6 +62,11 @@ def record_missing_carriers(compiled: CompiledScene, models: dict[str, str], cac
         destination = spec.directory(cache_root)
         if (destination / "carrier.json").is_file():
             logging.info("carrier %s: cached at %s", spec.name, destination)
+            continue
+        bundled = BUNDLED_CARRIERS / destination.name
+        if (bundled / "carrier.json").is_file():
+            logging.info("carrier %s: copying the bundled recording into %s", spec.name, destination)
+            shutil.copytree(bundled, destination)
             continue
         logging.info("carrier %s: recording into %s", spec.name, destination)
         config = MultiStemConfig.from_dict(carrier_record_config(spec, models))

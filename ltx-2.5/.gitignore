@@ -4,3 +4,4 @@ models/
 *.safetensors
 __pycache__/
 *.pyc
+!carriers/**/carrier.safetensors

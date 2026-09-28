@@ -83,7 +83,8 @@ $PY -m soundwich_ltx.generate --scene examples/neon_biology_lab.yaml
 
 The first run records the six carriers the scene needs (four activation carriers from the scene's
 `entity_groups`, plus the Stage-1 and Stage-2 suppression carriers) and caches them in `outputs/carriers/`.
-Later runs reuse them. Other flags: `--output-dir`, `--seed`, `--carrier-cache`, `--stage1-only`,
+Later runs reuse them. The Stage-2 suppression carrier is the recording used for the paper and ships in
+`carriers/`; it is copied into the cache instead of being recorded. Other flags: `--output-dir`, `--seed`, `--carrier-cache`, `--stage1-only`,
 `--reuse-stage1`.
 
 ### Outputs
