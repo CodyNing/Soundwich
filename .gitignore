@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+third_party/
+outputs/
+cache/
+checkpoints/
+ckpts/
+models/
+*.safetensors
+*.pt
