@@ -1,0 +1,80 @@
+# Two speakers introduce themselves in turn: Maya first, then Leo. Used with the stem-editing example
+# (examples/edits/two_introductions_swap_order.yaml), which lets Leo speak first.
+id: two_introductions
+
+# Nominal clip length used for timeline feathering (2% of this duration).
+duration_seconds: 9.96
+
+generation:
+  seed: 99
+  frames: 249
+  frame_rate: 25
+  # Defaults: width 768, height 448, steps 40, video_cfg 3.0, audio_cfg 7.0.
+
+visual:
+  positive: A locked-off medium two-shot in a quiet, warmly lit interview studio.
+    On the left, an adult woman with dark shoulder-length hair wears a mustard sweater.
+    On the right, an adult man with short brown hair wears a navy shirt. They sit
+    in separate armchairs with a clear gap between them, facing the camera. Both faces
+    and mouths stay clearly visible throughout. Each gives one short spoken introduction
+    while the other listens with their mouth closed. Natural subtle facial expressions
+    and small head movements. Their hands rest on their laps. The camera, chairs,
+    lighting, and background remain fixed for the entire shot.
+  negative: camera movement, camera cuts, zoom, walking, standing up, changing seats,
+    gestures, handling objects, hidden mouths, profile faces, overlapping people,
+    additional people, matching clothes, exaggerated movement, subtitles, captions,
+    text, logos, watermarks, blurry faces
+  # Appended to the visual prompt as "Visible sound entities: ...".
+  allowed_entities:
+  - maya
+  - leo
+
+audio_globals:
+  positive: clear foreground speech, clean studio recording
+  negative: music, footsteps, sound effects, crowd, random dialogue, distortion
+
+# One activation carrier per sound group, recorded once from these prompts and cached.
+entity_groups:
+  female_speech:
+    carrier:
+      positive: high quality clear female voice speaking loudly
+      negative: male voice
+      seed: 42
+      audio_rescale: 0.7
+  male_speech:
+    carrier:
+      positive: male voice speaking loudly
+      negative: female voice
+      seed: 42
+      audio_rescale: 0.7
+
+sound_entities:
+- id: maya
+  group: female_speech
+  sam_prompt: woman in mustard sweater
+  negative_source_audio: clear high-pitched adult female voice
+- id: leo
+  group: male_speech
+  sam_prompt: man in navy shirt
+  negative_source_audio: deep low-pitched adult male voice
+
+stems:
+- id: maya_voice
+  entity: maya
+  # Reviewed SAM click on Stage-1 frame 0 (normalized x/y).
+  sam_point_frame: 0
+  sam_points:
+  - {x: 0.15885416666666666, y: 0.5809151785714286, label: positive}
+  positive: clear high-pitched adult female voice says "I'm Maya. I study the stars."
+  negative: deep male voice, low-pitched male voice, music, background chatter
+  windows:
+  - {start: 0.8, end: 4, text: I'm Maya. I study the stars.}
+- id: leo_voice
+  entity: leo
+  sam_point_frame: 0
+  sam_points:
+  - {x: 0.8020833333333334, y: 0.5987723214285714, label: positive}
+  positive: deep low-pitched adult male voice says "I'm Leo. I study the ocean."
+  negative: high-pitched female voice, soprano, music, background chatter
+  windows:
+  - {start: 5.6, end: 8.8, text: I'm Leo. I study the ocean.}

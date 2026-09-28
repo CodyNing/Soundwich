@@ -1,0 +1,12 @@
+# Swap who speaks first: Leo introduces himself, then Maya. Both lines keep their generated audio;
+# only their positions change. Output: <run>/edits/swap_order/
+id: swap_order
+# Stage-2 seed of the video refinement (the generation used 99).
+seed: 94
+
+stems:
+  maya_voice:
+    # New start (seconds) of each window, or null to keep it; window lengths are kept.
+    retime: [3.96]   # was 0.8-4.0
+  leo_voice:
+    retime: [0.08]   # was 5.6-8.8

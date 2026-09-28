@@ -130,24 +130,29 @@ refines the video again around them:
   windows and the original masks, the scene lane is off, and Stage-2 suppression replay stays active outside the
   edited windows.
 
+The example reproduces the paper's speaker-order swap: generate the base scene (Maya speaks first, then Leo),
+then move both introductions so Leo speaks first. Both lines keep their generated audio; the video is refined
+with Stage-2 seed 94.
+
 ```bash
-$PY -m soundwich_ltx.edit --run outputs/neon_biology_lab_seed1096 \
-    --edit examples/edits/neon_biology_lab_swap_turns.yaml --dry-run   # print the plan, no GPU
-$PY -m soundwich_ltx.edit --run outputs/neon_biology_lab_seed1096 \
-    --edit examples/edits/neon_biology_lab_swap_turns.yaml
+$PY -m soundwich_ltx.generate --scene examples/two_introductions.yaml
+$PY -m soundwich_ltx.edit --run outputs/two_introductions_seed99 \
+    --edit examples/edits/two_introductions_swap_order.yaml --dry-run   # print the plan, no GPU
+$PY -m soundwich_ltx.edit --run outputs/two_introductions_seed99 \
+    --edit examples/edits/two_introductions_swap_order.yaml
 ```
 
-The example swaps the scientist's and the android's turns. An edit lists stems by id:
+An edit lists stems by id:
 
 ```yaml
-id: new_reply                    # output folder: <run>/edits/new_reply/
-seed: 1096                       # optional Stage-2 seed (default: the run's seed)
+id: new_line                     # output folder: <run>/edits/new_line/
+seed: 94                         # optional Stage-2 seed (default: the run's seed)
 stems:
-  scientist_voice:
-    retime: [6.3]                # new start (s) per window, null keeps one; lengths are kept
-  android_voice:
+  maya_voice:
+    retime: [3.96]               # new start (s) per window, null keeps one; lengths are kept
+  leo_voice:
     replace:
-      windows: [{text: Everything is stable now}]   # replaces the quoted line in the stem prompt
+      windows: [{text: I'm Leo. I study the tides.}]   # replaces the quoted line in the stem prompt
       # optional: positive, negative, per-window start/end, seed (default: the run's seed)
 ```
 

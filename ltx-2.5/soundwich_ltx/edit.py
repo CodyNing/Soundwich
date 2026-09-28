@@ -1,6 +1,6 @@
 """Edit the stems of a finished run: retime and/or replace stems, then refine the video around the fixed audio.
 
-    python -m soundwich_ltx.edit --run outputs/neon_biology_lab_seed1096 --edit examples/edits/neon_biology_lab_swap_turns.yaml
+    python -m soundwich_ltx.edit --run outputs/two_introductions_seed99 --edit examples/edits/two_introductions_swap_order.yaml
 
 Retiming moves each window of a stem's saved Stage-2 audio latent, shifting the surrounding latent frames so
 the clip length is unchanged. Replacement regenerates one stem with Stage 1 (new source prompt, original visual
