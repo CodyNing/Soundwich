@@ -35,7 +35,7 @@ def _find_upstream_repo_root() -> Path | None:
     return None
 
 
-def _ensure_upstream_importable() -> None:
+def _ensure_upstream_importable() -> Path:
     """Make the upstream ``ovi`` package importable.
 
     ``setup.sh`` clones upstream Ovi into ``third_party/Ovi`` (gitignored)
@@ -45,7 +45,7 @@ def _ensure_upstream_importable() -> None:
 
     ``ovi.ovi_fusion_engine`` loads a default config from a path relative to
     the upstream repo root as a module-level side effect, so this also
-    chdirs there for the duration of that one import.
+    chdirs there for the duration of that one import. Returns the repo root.
     """
     repo_root = _find_upstream_repo_root()
     if repo_root is None:
@@ -63,11 +63,13 @@ def _ensure_upstream_importable() -> None:
         import ovi.ovi_fusion_engine  # noqa: F401
     finally:
         os.chdir(previous_cwd)
+    return repo_root
 
 
-_ensure_upstream_importable()
+# Upstream Ovi also loads its model configs relative to this directory.
+UPSTREAM_REPO_ROOT = _ensure_upstream_importable()
 
 # Attaches the multi-stem forward path to ovi.modules.fusion.FusionModel.
 from . import fusion as _fusion  # noqa: E402,F401
 
-__all__: list[str] = []
+__all__ = ["UPSTREAM_REPO_ROOT"]

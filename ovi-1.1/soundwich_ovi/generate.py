@@ -9,6 +9,7 @@ import argparse
 import dataclasses
 import json
 import logging
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -21,6 +22,7 @@ from .carriers import ensure_carrier_bank
 from .engine import OviMultiStemEngine
 from .scene import SceneSpec, load_scene
 from .audio import normalize_and_mix
+from . import UPSTREAM_REPO_ROOT
 
 EXAMPLES_DIR = Path(__file__).resolve().parents[1] / "examples"
 DEFAULT_ACTIVATION_CARRIER = EXAMPLES_DIR / "carriers" / "general_party_detailed.yaml"
@@ -157,6 +159,13 @@ def main(argv: list[str] | None = None) -> int:
         handlers=[logging.StreamHandler(stream=sys.stdout)],
     )
 
+    # Upstream Ovi reads its model configs relative to its repo root, so make
+    # user paths absolute and run from there.
+    config["ckpt_dir"] = str(Path(config["ckpt_dir"]).resolve())
+    carrier_cache_dir = Path(args.carrier_cache_dir).resolve()
+    output_root = Path(args.output_dir).resolve()
+    os.chdir(UPSTREAM_REPO_ROOT)
+
     torch.cuda.set_device(0)
     from ovi.distributed_comms.parallel_states import initialize_sequence_parallel_state
 
@@ -167,7 +176,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     carrier_kwargs = dict(
-        cache_dir=args.carrier_cache_dir,
+        cache_dir=carrier_cache_dir,
         sample_steps=config["sample_steps"],
         video_frame_height_width=config["video_frame_height_width"],
         solver_name=config["solver_name"],
@@ -197,7 +206,6 @@ def main(argv: list[str] | None = None) -> int:
         **config["method"],
     )
 
-    output_root = Path(args.output_dir)
     output_root.mkdir(parents=True, exist_ok=True)
     saved = _save_scene_result(output_root, scene, result)
     logging.info("Saved %s", saved)
