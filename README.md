@@ -119,9 +119,10 @@ or replace it with a new take, then refine the video on the fixed, edited audio 
 python -m soundwich_ltx.generate --scene examples/two_introductions.yaml
 python -m soundwich_ltx.edit --run outputs/two_introductions_seed99 \
   --edit examples/edits/two_introductions_swap_order.yaml
-# MiniMax H3: deliver the man's reply two seconds later
-python -m soundwich_h3.edit --run outputs/the_rooftop_reservation-seed3101 \
-  --edit examples/edits/rooftop_later_reply.json
+# MiniMax H3: move the cat's meow from the opening to the middle of the scene
+python -m soundwich_h3.generate --scene examples/enchanted_archive.json
+python -m soundwich_h3.edit --run outputs/enchanted_archive-seed74 \
+  --edit examples/edits/archive_move_meow.json
 ```
 
 Muting and remixing need no model: the stems are plain WAV files.

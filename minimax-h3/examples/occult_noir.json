@@ -1,0 +1,59 @@
+{
+  "id": "occult_noir",
+  "title": "Occult Noir",
+  "seed": 71,
+  "width": 768,
+  "height": 448,
+  "num_frames": 243,
+  "num_inference_steps": 24,
+  "carrier_references": "carrier_references.json",
+  "video_prompt": "integrated_multimodal_description: Authentic 1940s supernatural film noir, live-action 35mm photography, crisp monochrome contrast, fine film grain, and restrained professional acting. In a candlelit private office, a woman in an ivory blouse sits at the left and a man in a charcoal coat sits at the right across a small round table, both framed waist-up and close to the camera. Venetian-blind shadows stripe the dark wood walls while one warm table lamp illuminates their faces and a trace of smoke hangs in the air. The woman lifts her eyes from a brass key and speaks with controlled concern; the man listens, then answers with steady eye contact. A slow subtle push-in holds both faces sharply readable in one continuous two-shot.\noverall_soundscape: clear high-pitched adult female voice says \"The key was warm when I found it\" deep low-pitched adult male voice says \"Then someone was here before us\"\nnon_diegetic_music: None.",
+  "stems": [
+    {
+      "id": "medium_voice",
+      "prompt": "integrated_multimodal_description: Authentic 1940s supernatural film noir, live-action 35mm photography, crisp monochrome contrast, fine film grain, and restrained professional acting. In a candlelit private office, a woman in an ivory blouse sits at the left and a man in a charcoal coat sits at the right across a small round table, both framed waist-up and close to the camera. Venetian-blind shadows stripe the dark wood walls while one warm table lamp illuminates their faces and a trace of smoke hangs in the air. The woman lifts her eyes from a brass key and speaks with controlled concern; the man listens, then answers with steady eye contact. A slow subtle push-in holds both faces sharply readable in one continuous two-shot.\noverall_soundscape: clear high-pitched adult female voice says \"The key was warm when I found it\"\nnon_diegetic_music: None.",
+      "volume": 1.0,
+      "windows": [
+        {
+          "start": 0.6,
+          "end": 4.0,
+          "text": "The key was warm when I found it"
+        }
+      ],
+      "carrier_group": "female_speech",
+      "sam_prompt": "woman in ivory blouse"
+    },
+    {
+      "id": "detective_voice",
+      "prompt": "integrated_multimodal_description: Authentic 1940s supernatural film noir, live-action 35mm photography, crisp monochrome contrast, fine film grain, and restrained professional acting. In a candlelit private office, a woman in an ivory blouse sits at the left and a man in a charcoal coat sits at the right across a small round table, both framed waist-up and close to the camera. Venetian-blind shadows stripe the dark wood walls while one warm table lamp illuminates their faces and a trace of smoke hangs in the air. The woman lifts her eyes from a brass key and speaks with controlled concern; the man listens, then answers with steady eye contact. A slow subtle push-in holds both faces sharply readable in one continuous two-shot.\noverall_soundscape: deep low-pitched adult male voice says \"Then someone was here before us\"\nnon_diegetic_music: None.",
+      "volume": 1.0,
+      "windows": [
+        {
+          "start": 4.4,
+          "end": 8.0,
+          "text": "Then someone was here before us"
+        }
+      ],
+      "carrier_group": "male_speech",
+      "sam_prompt": "man in charcoal coat",
+      "sam_point_frame": 0,
+      "sam_points": [
+        {
+          "x": 0.78125,
+          "y": 0.52455,
+          "label": "positive"
+        },
+        {
+          "x": 0.80469,
+          "y": 0.26786,
+          "label": "positive"
+        },
+        {
+          "x": 0.23438,
+          "y": 0.46875,
+          "label": "negative"
+        }
+      ]
+    }
+  ]
+}

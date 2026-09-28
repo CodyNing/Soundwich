@@ -1,0 +1,28 @@
+{
+  "video_prompt_substitutions": [
+    [
+      "Then someone was here before us",
+      "Someone is still watching us"
+    ]
+  ],
+  "edits": [
+    {
+      "stem": "medium_voice",
+      "prompt": "integrated_multimodal_description: Authentic monochrome 1940s film noir in a candlelit wood-paneled office. clear high-pitched adult female voice says \"The key was warm when I found it\". Only this speaker saying the specified words is audible. No additional words, other voices, singing, humming, music, or sound effects.\noverall_soundscape: Only the specified source is audible.\nnon_diegetic_music: None."
+    },
+    {
+      "stem": "detective_voice",
+      "replace": {
+        "prompt": "integrated_multimodal_description: Authentic monochrome 1940s film noir in a candlelit wood-paneled office. deep low-pitched adult male voice says \"Someone is still watching us\". Only this speaker saying the specified words is audible. No additional words, other voices, singing, humming, music, or sound effects.\noverall_soundscape: Only the specified source is audible.\nnon_diegetic_music: None.",
+        "seed": 71,
+        "windows": [
+          {
+            "start": 4.4,
+            "end": 8.0,
+            "text": "Someone is still watching us"
+          }
+        ]
+      }
+    }
+  ]
+}

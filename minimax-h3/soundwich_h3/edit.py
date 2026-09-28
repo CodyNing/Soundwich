@@ -1,12 +1,13 @@
 """Edit stems of a completed generation, then refine its video on the edited audio.
 
-    python -m soundwich_h3.edit --run outputs/the_rooftop_reservation-seed3101 \
-        --edit examples/edits/rooftop_later_reply.json
+    python -m soundwich_h3.edit --run outputs/enchanted_archive-seed74 \
+        --edit examples/edits/archive_move_meow.json
 
 Retiming moves one window's clip inside a stem's saved Scene Integration audio
 latents; the tokens in between shift to keep the clip length. Replacement runs
 Stem Formation for that one stem with a new source prompt and seed and swaps in
-its audio latents. The edited audio is then held clean and fixed while the
+its audio latents. A kept stem may get a new source prompt for the refinement;
+its audio is unchanged. The edited audio is then held clean and fixed while the
 saved Stem Formation video is re-noised to the Scene Integration video sigma and
 refined with the original SAM entity masks, the revised windows, and quiet
 suppression (no activation carriers).
@@ -30,7 +31,8 @@ from .batch import AUDIO_TOKENS_PER_SECOND
 from .generate import (QUIET_GROUP, Pipeline, _key, blend, carrier_root, check_stems, completed, run_stage1,
                        settings, stage1_bank)
 
-EDIT_KEYS = {'stem', 'replace', 'retime'}
+EDIT_KEYS = {'stem', 'prompt', 'replace', 'retime'}
+TAKE_KEYS = {'prompt', 'seed', 'windows'}
 
 
 def move_stereo_clip(audio, row, start, end, target):
@@ -87,9 +89,14 @@ def resolve(scene, spec):
         seen.add(item['stem'])
         row = rows[item['stem']]
         stem = edited['stems'][row]
+        if 'prompt' in item:
+            if 'replace' in item:
+                raise ValueError(f'A replaced stem takes its prompt from replace: {item["stem"]}')
+            # Conditions the kept audio of this stem on a new source prompt during refinement.
+            stem['prompt'] = item['prompt']
         if 'replace' in item:
             take = item['replace']
-            if not {'prompt', 'seed'} <= take.keys() or set(take) - {'prompt', 'seed', 'windows'}:
+            if not {'prompt', 'seed'} <= take.keys() or set(take) - TAKE_KEYS:
                 raise ValueError(f'replace needs prompt and seed (optional windows): {item["stem"]}')
             stem['prompt'] = take['prompt']
             if 'windows' in take:
@@ -222,6 +229,7 @@ def plan(run, scene, references, spec, edited, operations, output):
                for op in operations if op['op'] == 'replace'},
         windows={s['id']: s.get('windows', []) for s in edited['stems']},
         video_prompt_changed=edited['video_prompt'] != scene['video_prompt'],
+        stem_prompts_changed=[s['id'] for s, old in zip(edited['stems'], scene['stems']) if s['prompt'] != old['prompt']],
         refinement=dict(video_source=refinement['source'], audio_source=str(run/'stage2'), masks=str(run/'sam'),
                         video_sigma=refinement['video_sigma'], audio_sigma=0., fixed_audio=True,
                         noise_seed=refinement['noise_seed'], model_evaluations=scene['num_inference_steps']-1,

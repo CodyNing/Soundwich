@@ -1,0 +1,26 @@
+{
+  "female_speech": {
+    "role": "activation",
+    "prompt": "high quality clear female voice speaking loudly",
+    "seed": 42,
+    "quantile": 0.7
+  },
+  "male_speech": {
+    "role": "activation",
+    "prompt": "male voice speaking loudly",
+    "seed": 42,
+    "quantile": 0.7
+  },
+  "quiet": {
+    "role": "suppression",
+    "prompt": "integrated_multimodal_description: An empty quiet room in soft daylight. No people are present. The camera is static and nothing moves.\noverall_soundscape: Complete silence. No speech, music, footsteps, or other sounds.\nnon_diegetic_music: None.",
+    "seed": 1775,
+    "quantile": 0.7
+  },
+  "cat_meow": {
+    "role": "activation",
+    "prompt": "cat meowing loudly",
+    "seed": 42,
+    "quantile": 0.7
+  }
+}

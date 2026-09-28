@@ -122,35 +122,45 @@ descriptions from their video prompts, and `wooden door` for the door close), wi
 
 ## Editing stems
 
-A completed run (Stage 1, SAM masks, and Stage 2) can be edited without regenerating the other stems:
+A completed run (Stage 1, SAM masks, and Stage 2) can be edited without regenerating the other stems. The two
+examples are the paper's H3 edits, each on its own base scene (768×448):
+
+- *The Enchanted Archive* (`examples/enchanted_archive.json`, seed 74): the cat's meowing is moved from 0.4–2.3 s
+  to 3.2–5.1 s (`examples/edits/archive_move_meow.json`).
+- *Occult Noir* (`examples/occult_noir.json`, seed 71): the detective's line "Then someone was here before us" is
+  replaced by "Someone is still watching us", a new take (seed 71) in the same 4.4–8.0 s window
+  (`examples/edits/noir_new_reply.json`).
 
 ```bash
-.venv/bin/python -m soundwich_h3.edit --run outputs/the_rooftop_reservation-seed3101 \
-    --edit examples/edits/rooftop_later_reply.json --dry-run   # validate and print the plan, no GPU
-.venv/bin/python -m soundwich_h3.edit --run outputs/the_rooftop_reservation-seed3101 \
-    --edit examples/edits/rooftop_later_reply.json
+.venv/bin/python -m soundwich_h3.generate --scene examples/enchanted_archive.json
+.venv/bin/python -m soundwich_h3.edit --run outputs/enchanted_archive-seed74 \
+    --edit examples/edits/archive_move_meow.json --dry-run   # validate and print the plan, no GPU
+.venv/bin/python -m soundwich_h3.edit --run outputs/enchanted_archive-seed74 \
+    --edit examples/edits/archive_move_meow.json
+
+.venv/bin/python -m soundwich_h3.generate --scene examples/occult_noir.json
+.venv/bin/python -m soundwich_h3.edit --run outputs/occult_noir-seed71 \
+    --edit examples/edits/noir_new_reply.json
 ```
 
-The example moves the man's reply "Come on, it's our table." from 5.20–6.85 s to 7.20–8.85 s. An edit file has
-`edits`, a list with one entry per edited stem (`stem`, plus `retime` and/or `replace`):
+The Archive scene needs a `cat_meow` activation carrier (`carrier_references_archive.json`). The SAM prompts
+include the reviewed clicks used for the paper's masks.
+
+An edit file has `edits`, a list with one entry per edited stem (`stem`, plus `retime`, `replace`, and/or
+`prompt`):
 
 - `retime`: a list of `{"window": i, "start": seconds}`. The clip of window *i* is moved within the stem's Stage-2
   audio latents (40 tokens per second, both stereo channels), and the tokens between the old and the new position
   shift to fill the gap. The window moves with it. The shifted span may not contain another window of the same
   stem. `window` may be omitted for a stem with a single window.
-- `replace`: `{"prompt": ..., "seed": ..., "windows": [...]}` (`windows` optional). Stage 1 is run for this stem
-  alone with the new source prompt, seed, and windows, and its audio latents replace the stem's. A replaced stem
-  can also be retimed.
+- `replace`: `{"prompt": ..., "seed": ..., "windows": [...], "stage1": {...}}` (`windows` and `stage1` optional).
+  Stage 1 is run for this stem alone with the new source prompt, seed, windows, and Stage-1 settings (default:
+  the scene's), and its audio latents replace the stem's. A replaced stem can also be retimed.
+- `prompt`: a new source prompt for a kept stem during the refinement; its audio is unchanged. The Noir example
+  uses it to give the woman's stem the same source-only prompt style as the new take.
 
 An optional `video_prompt_substitutions` list of `[old, new]` pairs edits the shared video prompt, e.g. to change
-a spoken line there too:
-
-```json
-{
-  "edits": [{"stem": "man", "replace": {"seed": 4101, "prompt": "integrated_multimodal_description: [Shot 1] ..."}}],
-  "video_prompt_substitutions": [["Come on, it's our table.", "Shall we sit down?"]]
-}
-```
+a spoken line there too (see `examples/edits/noir_new_reply.json`).
 
 The other stems keep their Stage-2 audio. The edited audio latents are then held clean and fixed, while the saved
 Stage-1 video is re-noised to σ<sub>v</sub>=0.95 (seed + 1) and refined for 23 evaluations. This uses the run's SAM

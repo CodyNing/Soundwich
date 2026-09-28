@@ -1,0 +1,78 @@
+{
+  "id": "enchanted_archive",
+  "title": "The Enchanted Archive",
+  "seed": 74,
+  "width": 768,
+  "height": 448,
+  "num_frames": 243,
+  "num_inference_steps": 24,
+  "carrier_references": "carrier_references_archive.json",
+  "video_prompt": "integrated_multimodal_description: Premium live-action magical adventure cinema with rich jewel colors, polished anamorphic lenses, warm lantern light, and delicate golden dust in the air. Inside an ancient circular archive, a woman in an emerald robe stands at the left and a man in a brown coat stands at the right, both close to a carved desk with an orange cat sitting prominently between them. The cat raises its head and meows, the woman reacts with a small smile and speaks, and the man listens before giving a calm answer. Amber light wraps around their faces while tall shelves and brass details fall into soft bokeh behind them. The camera makes a gentle forward drift through one continuous medium three-shot with every face clearly visible.\noverall_soundscape: loud natural cat meowing clear high-pitched adult female voice says \"The cat found the hidden door\" deep low-pitched adult male voice says \"Then show me where it leads\"\nnon_diegetic_music: None.",
+  "stems": [
+    {
+      "id": "cat_meow",
+      "prompt": "integrated_multimodal_description: A warmly lit fantasy archive with tall bookshelves and a wooden desk. loud natural cat meowing. Only natural cat meowing is audible. No human speech, singing, humming, music, or sounds from other sources.\noverall_soundscape: Only the specified source is audible.\nnon_diegetic_music: None.",
+      "volume": 0.8,
+      "windows": [
+        {
+          "start": 0.4,
+          "end": 2.3,
+          "text": "repeated cat meowing"
+        }
+      ],
+      "carrier_group": "cat_meow",
+      "sam_prompt": "orange cat"
+    },
+    {
+      "id": "archivist_voice",
+      "prompt": "integrated_multimodal_description: A warmly lit fantasy archive with tall bookshelves and a wooden desk. clear high-pitched adult female voice says \"The cat found the hidden door\". Only this speaker saying the specified words is audible. No additional words, other voices, singing, humming, animal sounds, music, or sound effects.\noverall_soundscape: Only the specified source is audible.\nnon_diegetic_music: None.",
+      "volume": 1.0,
+      "windows": [
+        {
+          "start": 2.6,
+          "end": 5.5,
+          "text": "The cat found the hidden door"
+        }
+      ],
+      "carrier_group": "female_speech",
+      "sam_prompt": "woman in green robe"
+    },
+    {
+      "id": "traveler_voice",
+      "prompt": "integrated_multimodal_description: A warmly lit fantasy archive with tall bookshelves and a wooden desk. deep low-pitched adult male voice says \"Then show me where it leads\". Only this speaker saying the specified words is audible. No additional words, other voices, singing, humming, animal sounds, music, or sound effects.\noverall_soundscape: Only the specified source is audible.\nnon_diegetic_music: None.",
+      "volume": 1.0,
+      "windows": [
+        {
+          "start": 5.9,
+          "end": 9.0,
+          "text": "Then show me where it leads"
+        }
+      ],
+      "carrier_group": "male_speech",
+      "sam_prompt": "man in brown coat",
+      "sam_point_frame": 0,
+      "sam_points": [
+        {
+          "x": 0.8,
+          "y": 0.6,
+          "label": "positive"
+        },
+        {
+          "x": 0.61,
+          "y": 0.3,
+          "label": "positive"
+        },
+        {
+          "x": 0.3,
+          "y": 0.4,
+          "label": "negative"
+        },
+        {
+          "x": 0.5,
+          "y": 0.6,
+          "label": "negative"
+        }
+      ]
+    }
+  ]
+}
