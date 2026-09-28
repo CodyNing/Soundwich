@@ -1,0 +1,18 @@
+# Installed by setup.sh together with the pinned diffusers checkout (third_party/diffusers).
+# PyTorch CUDA 12.8 wheels come from https://download.pytorch.org/whl/cu128 (see setup.sh).
+torch==2.11.0+cu128
+torchvision==0.26.0+cu128
+torchaudio==2.11.0+cu128
+transformers==5.17.0
+accelerate==1.15.0
+huggingface-hub==1.32.0
+safetensors==0.8.0
+av==18.1.0
+soundfile==0.14.0
+numpy==2.5.3
+pillow==12.3.0
+einops
+sentencepiece
+protobuf
+imageio-ffmpeg
+peft
