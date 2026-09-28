@@ -11,7 +11,7 @@ from pathlib import Path
 import torch
 from PIL import Image
 
-from soundwich_ltx.config import MultiStemConfig
+from soundwich_ltx.config import MultiStemConfig, StemConfig
 
 
 def sample_indices(frame_count: int, stride: int, max_frames: int) -> list[int]:
@@ -61,6 +61,15 @@ def read_token_masks(config: MultiStemConfig, path: Path) -> dict[int, list[floa
     return masks
 
 
+def _stem_prompt(stem: StemConfig) -> dict[str, object]:
+    """Text prompt plus optional reviewed click points (normalized x/y on one Stage-1 frame)."""
+    item: dict[str, object] = {"id": stem.id, "prompt": stem.sam_prompt}
+    if stem.sam_points:
+        item["points"] = [dict(point) for point in stem.sam_points]
+        item["point_frame_index"] = stem.sam_point_frame
+    return item
+
+
 def run_sam3(
     config: MultiStemConfig,
     *,
@@ -69,7 +78,7 @@ def run_sam3(
     frame_indices: list[int],
     token_shape: tuple[int, int, int],
 ) -> tuple[dict[int, list[float]], Path]:
-    """Segment every stem's ``sam_prompt`` on the Stage-1 frames and pool masks to Stage-2 tokens."""
+    """Segment every stem's ``sam_prompt`` (and reviewed points) on the Stage-1 frames and pool to Stage-2 tokens."""
     missing = config.sam3.missing_settings()
     if missing:
         raise RuntimeError("SAM3 is not configured:\n" + "\n".join(f"  - {item}" for item in missing))
@@ -77,10 +86,7 @@ def run_sam3(
     sam_root.mkdir(parents=True, exist_ok=True)
     prompt_path = sam_root / "prompts.json"
     output_path = sam_root / "stage2_a2v_mask.json"
-    prompts = {
-        "case_id": config.id,
-        "stems": [{"id": stem.id, "prompt": stem.sam_prompt} for stem in config.stems],
-    }
+    prompts = {"case_id": config.id, "stems": [_stem_prompt(stem) for stem in config.stems]}
     prompt_path.write_text(json.dumps(prompts, indent=2) + "\n", encoding="utf-8")
     command = [
         config.sam3.python,

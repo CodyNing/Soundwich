@@ -22,7 +22,7 @@ from pathlib import Path
 from . import runtime
 
 # Paper settings. Scenes may override these under "stage1" / "stage2".
-STAGE1_DEFAULTS = dict(quiet_blend=0.60, outside_attenuation=0.25)
+STAGE1_DEFAULTS = dict(quiet_blend=0.30, outside_attenuation=0.25)
 STAGE2_DEFAULTS = dict(video_sigma=0.95, audio_sigma=0.95, quiet_blend=0.30, outside_attenuation=0.25)
 QUIET_GROUP = 'quiet'
 QUIET_REFINEMENT_SEED_OFFSET = 1000

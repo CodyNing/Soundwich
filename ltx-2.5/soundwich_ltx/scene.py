@@ -403,6 +403,8 @@ def compile_scene(  # noqa: PLR0915
             ),
             "reference_group": _clean(entity.get("group")),
             "sam_prompt": _clean(stem.get("sam_prompt") or entity.get("sam_prompt") or entity.get("visual_entity")),
+            "sam_points": deepcopy(stem.get("sam_points") or entity.get("sam_points") or []),
+            "sam_point_frame": stem.get("sam_point_frame", entity.get("sam_point_frame")),
             "volume": float(stem.get("volume", 1.0)),
             "windows": deepcopy(stem.get("windows") or []),
             "auto_negative": bool(stage1["auto_negative"]),

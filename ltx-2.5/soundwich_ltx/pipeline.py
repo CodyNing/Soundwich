@@ -93,9 +93,18 @@ class MultiStemPipeline:
     # ------------------------------------------------------------------ public API
 
     @torch.inference_mode()
-    def generate(self, root: Path, *, stage1_only: bool = False) -> dict[str, object]:
-        """Stage 1 -> SAM3 entity masks -> Stage 2, all written under ``root``."""
-        stage1 = self.run_stage1(root)
+    def generate(self, root: Path, *, stage1_only: bool = False, reuse_stage1: bool = False) -> dict[str, object]:
+        """Stage 1 -> SAM3 entity masks -> Stage 2, all written under ``root``.
+
+        With ``reuse_stage1``, the saved Stage-1 result in ``root`` is kept and only the masks and Stage 2 are
+        recomputed, e.g. after editing ``sam_points`` in the scene.
+        """
+        if reuse_stage1:
+            if not (root / "stage1_latents.pt").is_file() or not (root / "stage1_manifest.json").is_file():
+                raise FileNotFoundError(f"no saved Stage-1 result to reuse in {root}")
+            stage1: dict[str, object] = {"stage1_latents": str(root / "stage1_latents.pt")}
+        else:
+            stage1 = self.run_stage1(root)
         if stage1_only or not self.config.stage2.enabled:
             return stage1
         token_masks, mask_path = self.run_masks(root)

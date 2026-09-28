@@ -228,6 +228,17 @@ class Window:
         return value
 
 
+def _sam_point(raw: Any) -> dict[str, Any]:
+    point = _mapping(raw, "sam point")
+    x, y = float(point["x"]), float(point["y"])
+    label = str(point.get("label", "positive")).lower()
+    if not (0 <= x <= 1 and 0 <= y <= 1):
+        raise ValueError("sam point x/y must be normalized to [0, 1]")
+    if label not in {"positive", "negative"}:
+        raise ValueError("sam point label must be positive or negative")
+    return {"x": x, "y": y, "label": label}
+
+
 @dataclass(frozen=True)
 class StemConfig:
     id: str
@@ -236,6 +247,8 @@ class StemConfig:
     negative_source: str
     reference_group: str
     sam_prompt: str = ""
+    sam_points: tuple[dict[str, Any], ...] = ()
+    sam_point_frame: int | None = None
     windows: tuple[Window, ...] = ()
     volume: float = 1.0
     blend_strength: float | None = None
@@ -254,6 +267,10 @@ class StemConfig:
         blend_strength = raw.get("blend_strength")
         if blend_strength is not None and not 0 <= float(blend_strength) <= 1:
             raise ValueError("stem blend_strength must be in [0, 1]")
+        sam_points = tuple(_sam_point(item) for item in raw.get("sam_points") or [])
+        sam_point_frame = raw.get("sam_point_frame")
+        if sam_points and sam_point_frame is None:
+            raise ValueError("stem sam_points require sam_point_frame")
         return cls(
             id=_nonempty(raw.get("id"), "stem.id"),
             positive=_nonempty(raw.get("positive"), "stem.positive"),
@@ -261,6 +278,8 @@ class StemConfig:
             negative_source=str(raw.get("negative_source") or raw.get("positive") or "").strip(),
             reference_group=_nonempty(raw.get("reference_group", "general"), "stem.reference_group"),
             sam_prompt=str(raw.get("sam_prompt") or "").strip(),
+            sam_points=sam_points,
+            sam_point_frame=int(sam_point_frame) if sam_point_frame is not None else None,
             windows=windows,
             volume=volume,
             blend_strength=float(blend_strength) if blend_strength is not None else None,
@@ -680,6 +699,8 @@ class MultiStemConfig:
                 "negative": self.effective_negative(stem),
                 "volume": stem.volume,
                 "sam_prompt": stem.sam_prompt,
+                "sam_points": list(stem.sam_points),
+                "sam_point_frame": stem.sam_point_frame,
                 "blend_strength": stem.blend_strength,
                 "blend_schedule": stem.blend_schedule.summary() if stem.blend_schedule is not None else None,
             }

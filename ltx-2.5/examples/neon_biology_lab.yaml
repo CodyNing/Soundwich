@@ -6,7 +6,7 @@ id: neon_biology_lab
 duration_seconds: 10
 
 generation:
-  seed: 130
+  seed: 1096
   frames: 249
   frame_rate: 25
   # Defaults: width 768, height 448, steps 40, video_cfg 3.0, audio_cfg 7.0.
@@ -83,6 +83,12 @@ sound_entities:
 stems:
 - id: dog_barks
   entity: lab_dog
+  # Reviewed SAM overrides: the text prompt starts tracking and the click on
+  # Stage-1 frame 128 (normalized x/y) selects the dog.
+  sam_prompt: cat
+  sam_point_frame: 128
+  sam_points:
+  - {x: 0.39, y: 0.68, label: positive}
   positive: loud natural dog barking
   negative: cat meowing, speech, male voice, female voice, music
   volume: 0.8
@@ -92,6 +98,10 @@ stems:
   - {start: 0.4, end: 2.8, text: repeated dog barking}
 - id: cat_meows
   entity: lab_cat
+  sam_prompt: cat
+  sam_point_frame: 128
+  sam_points:
+  - {x: 0.47, y: 0.72, label: positive}
   positive: loud natural cat meowing
   negative: dog barking, speech, male voice, female voice, music
   volume: 0.75
@@ -100,6 +110,9 @@ stems:
   - {start: 0.4, end: 2.8, text: repeated cat meowing}
 - id: scientist_voice
   entity: scientist
+  sam_point_frame: 0
+  sam_points:
+  - {x: 0.23, y: 0.3, label: positive}
   positive: clear high-pitched adult female voice says "Both animals are calm now"
   negative: deep low-pitched adult male voice, dog barking, cat meowing, music
   windows:
@@ -112,6 +125,3 @@ stems:
   windows:
   - {start: 6.3, end: 9.2, text: Their signals match perfectly}
 
-method_settings:
-  stage2:
-    a2v_active_gain: 1.5

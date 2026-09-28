@@ -91,8 +91,12 @@ Everything for one run is written to `outputs/<scene id>-seed<seed>/`:
 | `sam/` | SAM prompts, full-resolution masks, overlays (`overlays/`) and mask validation |
 | `*/latents.pt`, `*/scene.json`, `*/run.json` | Latents, the exact scene, and the resolved schedule/settings |
 
-Check `sam/overlays/` to confirm that each prompt tracked the intended person. To redo the masks, delete `sam/`
-and `stage2/`.
+### Reviewing SAM masks
+
+A text prompt alone often does not isolate the right person. Check `sam/overlays/` after every run. For a wrong or
+unstable mask, add reviewed clicks to that stem in the scene: `sam_point_frame` (source frame index) and
+`sam_points` (normalized `x`/`y` in [0, 1] with `label: positive` or `negative`). Then delete `sam/` and `stage2/`
+and rerun; Stage 1 is reused.
 
 ## Scene format
 
@@ -107,13 +111,13 @@ The paper uses 243 frames (10.125 s at 24 fps), 768×448, and `num_inference_ste
   (seconds) and a `carrier_group`. Stems without windows are continuous and uncontrolled. For Stage 2, each stem
   needs either a `sam_prompt` (a string, or a list whose masks are unioned, e.g. performer and instrument) or a
   `video_routing` of `background_only` (the complement of all foreground masks) or `offscreen` (no video
-  tokens).
+  tokens). A stem with a single `sam_prompt` may add reviewed `sam_points` on `sam_point_frame`.
 
 Key settings (optional scene overrides):
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `stage1.quiet_blend`, `stage1.outside_attenuation` | 0.60, 0.25 | Quiet-carrier blend and attenuation outside a stem's windows |
+| `stage1.quiet_blend`, `stage1.outside_attenuation` | 0.30, 0.25 | Quiet-carrier blend and attenuation outside a stem's windows |
 | `stage2.video_sigma`, `stage2.audio_sigma` | 0.95, 0.95 | Stage-2 re-noising levels |
 | `stage2.quiet_blend`, `stage2.outside_attenuation` | 0.30, 0.25 | Stage-2 quiet-carrier blend and attenuation |
 

@@ -28,7 +28,7 @@ class BlendConfig:
     strength: float = 0.10
     value_scale: float = 0.80
     outside_suppression: float = 0.25   # outside-window attenuation
-    outside_silence_blend: float = 0.60  # quiet-reference blending weight
+    outside_silence_blend: float = 0.30  # quiet-reference blending weight
     feather_seconds: float = 0.20
     rms_scale_limit: float = 4.0
 

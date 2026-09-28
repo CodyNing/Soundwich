@@ -3,7 +3,9 @@
 Each stem declares either `sam_prompt` (a text prompt, or a list whose masks
 are unioned, e.g. performer plus instrument), or `video_routing`:
 `background_only` (owner = complement of all foreground entity masks) or
-`offscreen` (no owner video tokens).
+`offscreen` (no owner video tokens). A stem with a single text prompt may add
+reviewed click points: `sam_points` (normalized x/y, positive or negative
+label) on source frame `sam_point_frame`.
 """
 import hashlib
 import json
@@ -54,20 +56,39 @@ def mask_policy(scene):
             owners.append(dict(stem_id=stem['id'], components=[],
                                policy='background_only' if routing == 'background_only' else 'offscreen_audio_only'))
             continue
+        points = _sam_points(stem)
+        if points and len(texts) != 1:
+            raise ValueError(f'Stem {stem["id"]!r}: sam_points need exactly one sam_prompt')
         components = []
         for text in texts:
-            text = str(text).strip()
-            if text not in prompts:
-                prompts[text] = f'entity_{len(prompts):02d}'
-            components.append(prompts[text])
+            key = (str(text).strip(), json.dumps(points, sort_keys=True) if points else '')
+            if key not in prompts:
+                prompts[key] = dict(id=f'entity_{len(prompts):02d}', prompt=key[0], **points)
+            components.append(prompts[key]['id'])
         owners.append(dict(stem_id=stem['id'], components=components))
     if not prompts:
         raise ValueError('Entity routing needs at least one stem with a sam_prompt')
-    return dict(case_id=scene['id'], prompts=[dict(id=i, prompt=p) for p, i in prompts.items()], owners=owners)
+    return dict(case_id=scene['id'], prompts=list(prompts.values()), owners=owners)
+
+
+def _sam_points(stem):
+    raw = stem.get('sam_points') or []
+    if not raw:
+        return {}
+    if stem.get('sam_point_frame') is None:
+        raise ValueError(f'Stem {stem["id"]!r}: sam_points require sam_point_frame')
+    points = []
+    for item in raw:
+        x, y, label = float(item['x']), float(item['y']), str(item.get('label', 'positive')).lower()
+        if not (0 <= x <= 1 and 0 <= y <= 1) or label not in ('positive', 'negative'):
+            raise ValueError(f'Stem {stem["id"]!r}: invalid sam point {item!r}')
+        points.append(dict(x=x, y=y, label=label))
+    return dict(points=points, point_frame_index=int(stem['sam_point_frame']))
 
 
 def backend_prompt_spec(policy):
-    return dict(case_id=policy['case_id'], stems=[dict(id=p['id'], prompt=p['prompt']) for p in policy['prompts']])
+    keys = ('id', 'prompt', 'points', 'point_frame_index')
+    return dict(case_id=policy['case_id'], stems=[{k: p[k] for k in keys if k in p} for p in policy['prompts']])
 
 
 def load_entity_masks(scene, root, policy, *, threshold=MASK_THRESHOLD):

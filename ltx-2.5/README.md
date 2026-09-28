@@ -83,7 +83,8 @@ $PY -m soundwich_ltx.generate --scene examples/neon_biology_lab.yaml
 
 The first run records the six carriers the scene needs (four activation carriers from the scene's
 `entity_groups`, plus the Stage-1 and Stage-2 suppression carriers) and caches them in `outputs/carriers/`.
-Later runs reuse them. Other flags: `--output-dir`, `--seed`, `--carrier-cache`, `--stage1-only`.
+Later runs reuse them. Other flags: `--output-dir`, `--seed`, `--carrier-cache`, `--stage1-only`,
+`--reuse-stage1`.
 
 ### Outputs
 
@@ -99,6 +100,19 @@ Everything for one run is written to `outputs/<scene id>_seed<seed>/`:
 | `sam_outputs/` | SAM prompts, sampled frames, token masks, backend logs |
 | `stage1_latents.pt`, `stage2_*_latent.pt`, `run.json` | Latents and the resolved configuration |
 
+### Reviewing SAM masks
+
+Entity routing is only as good as the masks, and a text prompt alone is often not enough (two similar animals,
+people who swap places). Inspect every run:
+
+1. Open `sam_outputs/overlays/` and check that each stem's mask follows its on-screen source for the whole clip.
+2. For a wrong or unstable mask, add reviewed clicks to that stem in the scene: `sam_point_frame` (Stage-1 frame
+   index) and `sam_points` (normalized `x`/`y` in [0, 1] with `label: positive` or `negative`). Optionally override
+   the stem's `sam_prompt`; the text starts tracking and the clicks select the object.
+3. Rerun with `--reuse-stage1`. This keeps the Stage-1 result and recomputes only the masks and Stage 2.
+
+The example includes the reviewed prompts and clicks used for the paper's result.
+
 ## Scene format
 
 See `examples/neon_biology_lab.yaml`. A scene lists:
@@ -110,7 +124,8 @@ See `examples/neon_biology_lab.yaml`. A scene lists:
 - `sound_entities`: visible sources with their group, `sam_prompt`, and the description used to exclude them
   from other stems' negatives.
 - `stems`: prompt, explicit negative (otherwise the other stems' sources are used), `volume`, timeline
-  `windows` (seconds), and `scene_context_enabled` (keep continuous sources out of the scene lane).
+  `windows` (seconds), `scene_context_enabled` (keep continuous sources out of the scene lane), and optional
+  reviewed SAM overrides (`sam_prompt`, `sam_point_frame`, `sam_points`).
 - `generation`: `seed`, `frames` (8k+1), `frame_rate`, `width`/`height` (final size; Stage 1 runs at half),
   `steps`, CFG scales.
 - `method_settings`: overrides of the method defaults in `soundwich_ltx/scene.py` (`DEFAULT_METHOD_SETTINGS`).
@@ -125,7 +140,7 @@ Key knobs:
 | `stage1.scene_gather_fraction` | 0.50 | Share of Stage-1 steps during which the scene lane gathers the stems |
 | `stage2.start_sigma` | 0.95 | Stage-2 starting noise level (8 densified distilled steps) |
 | `stage2.scene_to_real_strength`, `real_to_scene_strength` | 1.0, 0.10 | Scene broadcast and scene update in Stage 2 |
-| `stage2.a2v_active_gain` | 1.0 | Gain on routed A2V updates for SAM-owned video tokens (the example uses 1.5) |
+| `stage2.a2v_active_gain` | 1.0 | Gain on routed A2V updates for SAM-owned video tokens (some scenes benefit from a higher value) |
 | `stage2.audio_cfg` | 1.0 | Values above 1 enable per-stem negative audio CFG in Stage 2 |
 
 ## License

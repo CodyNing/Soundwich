@@ -35,6 +35,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int, help="Override the scene's generation seed")
     parser.add_argument("--stage1-only", action="store_true", help="Stop after Stage 1 (no SAM3 or Stage 2)")
     parser.add_argument(
+        "--reuse-stage1",
+        action="store_true",
+        help="Keep the saved Stage-1 result and recompute only the SAM3 masks and Stage 2",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Validate the scene and print the resolved configuration without loading any model",
@@ -106,11 +111,15 @@ def main() -> None:
         raise RuntimeError(
             "SAM3 is not configured:\n" + "\n".join(f"  - {item}" for item in config.sam3.missing_settings())
         )
+    if args.stage1_only and args.reuse_stage1:
+        raise ValueError("--stage1-only and --reuse-stage1 are mutually exclusive")
     _record_missing_carriers(compiled, dict(config.model.__dict__), carrier_cache)
 
     from soundwich_ltx.pipeline import MultiStemPipeline  # noqa: PLC0415
 
-    result = MultiStemPipeline(config).generate(run_root, stage1_only=args.stage1_only)
+    result = MultiStemPipeline(config).generate(
+        run_root, stage1_only=args.stage1_only, reuse_stage1=args.reuse_stage1
+    )
     print(json.dumps(result, indent=2))  # noqa: T201
 
 
