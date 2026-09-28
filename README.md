@@ -115,9 +115,10 @@ Because every source is its own stem, a finished run can be edited one stem at a
 or replace it with a new take, then refine the video on the fixed, edited audio so the right person's lips follow.
 
 ```bash
-# LTX-2.5: swap the scientist's and the android's turns
-python -m soundwich_ltx.edit --run outputs/neon_biology_lab_seed1096 \
-  --edit examples/edits/neon_biology_lab_swap_turns.yaml
+# LTX-2.5: let Leo introduce himself before Maya
+python -m soundwich_ltx.generate --scene examples/two_introductions.yaml
+python -m soundwich_ltx.edit --run outputs/two_introductions_seed99 \
+  --edit examples/edits/two_introductions_swap_order.yaml
 # MiniMax H3: deliver the man's reply two seconds later
 python -m soundwich_h3.edit --run outputs/the_rooftop_reservation-seed3101 \
   --edit examples/edits/rooftop_later_reply.json
