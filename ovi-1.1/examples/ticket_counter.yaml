@@ -1,0 +1,46 @@
+scene_version: 2
+id: ticket_counter
+category: dialogue_order
+duration_seconds: 10
+generation:
+  seed: 3
+audio_globals:
+  positive: clear foreground audio, clean recording
+  negative: music, random noise, muffled sound
+sound_entities:
+  - id: passenger
+    group: speech
+    visual_entity: woman in a red coat
+  - id: clerk
+    group: speech
+    visual_entity: man in a white shirt
+stems:
+  - id: passenger_voice
+    entity: passenger
+    positive: adult female passenger voice says "Two tickets to downtown please", pauses, then says "Thank you"
+    negative: male voice
+    volume: 1.0
+    timeline_control: true
+    windows:
+      - {start: 1.0, end: 2.8, text: "Two tickets to downtown please"}
+      - {start: 7.0, end: 8.5, text: "Thank you"}
+  - id: clerk_voice
+    entity: clerk
+    positive: adult male ticket clerk voice says "Platform three leaves at five"
+    negative: female voice
+    volume: 1.0
+    timeline_control: true
+    windows:
+      - {start: 4.0, end: 5.8, text: "Platform three leaves at five"}
+visual:
+  positive: >-
+    A medium shot at a train ticket counter shows a woman in a bright red coat
+    on the left and a man in a white shirt behind the counter on the right. A
+    glass window separates them. Both faces, mouths, hands, and the ticket
+    counter remain visible as they exchange tickets and move naturally.
+  negative: >-
+    blurry, low quality, hidden faces, cropped people, crowd, extra people,
+    duplicate subjects, flicker, flashing people, ghosting, motion trails,
+    frame blending, sudden visual popping, identity changes, changing clothes,
+    warped bodies, extra limbs, unstable background, color shifts, exposure
+    flicker, random text

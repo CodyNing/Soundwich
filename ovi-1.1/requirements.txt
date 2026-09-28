@@ -1,0 +1,4 @@
+# Extra dependencies beyond upstream Ovi's requirements.txt.
+# (omegaconf already pulls in PyYAML transitively; listed explicitly since
+# soundwich_ovi imports it directly.)
+PyYAML

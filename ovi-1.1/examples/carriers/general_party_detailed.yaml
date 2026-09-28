@@ -1,0 +1,23 @@
+id: general_party_detailed
+role: activation
+seed: 42
+quantile: 0.70
+visual_prompt: >-
+  A crowded indoor dance party fills a large nightclub. A DJ performs behind a
+  mixing console in front of two large loudspeakers and bright colored lights.
+  A dense crowd dances close together, raises both arms, jumps to the beat, and
+  repeatedly cheers toward the DJ. Several people near the front shout with
+  excitement while the loudspeaker cones move strongly. The energetic party
+  continues at full intensity throughout the entire clip.
+audio_prompt: >-
+  Extremely loud crowded party throughout the full clip, powerful bass-heavy
+  electronic dance music, deep sub-bass, strong kick drum, bright rhythmic
+  percussion, many adults cheering and shouting together, repeated excited
+  crowd calls, dense continuous foreground sound, high energy, high volume,
+  clear powerful audio with no quiet gaps
+video_negative_prompt: >-
+  empty room, small crowd, seated people, still bodies, dark faces, blurry
+  subjects, frozen frame, low energy
+audio_negative_prompt: >-
+  silence, quiet audio, faint sound, whispering, isolated speech, solo speaker,
+  sparse ambience, weak bass, muffled sound, low volume, hiss, hum, distortion

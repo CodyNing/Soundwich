@@ -1,0 +1,16 @@
+id: silence_detailed_black_frame
+role: suppression
+seed: 42
+quantile: 0.30
+visual_prompt: >-
+  A uniform pure black frame fills the entire image from edge to edge. The
+  featureless black frame remains perfectly still and unchanged throughout the
+  full clip.
+audio_prompt: >-
+  Digital silence throughout the full clip, zero spoken words, zero narration,
+  zero music, zero sound effects, zero ambience, inaudible noise floor
+video_negative_prompt: >-
+  people, faces, mouths, objects, text, light, motion, camera movement
+audio_negative_prompt: >-
+  human voice, woman speaking, man speaking, narration, dialogue, spoken words,
+  singing, music, sound effects, ambience, room tone, hum, hiss, buzz
