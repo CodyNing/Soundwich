@@ -42,7 +42,7 @@ each source sounds like and when it plays. The result can then be retimed, muted
   </tr>
   <tr>
     <td align="center" width="33%"><img src="assets/gallery/h3-unrented-room.gif" width="100%"><br><sub><b>The Unrented Room</b> · MiniMax H3<br>three voices, piano, trumpet, rain, fire, clock, knocks</sub></td>
-    <td align="center" width="33%"><img src="assets/gallery/h3-last-button.gif" width="100%"><br><sub><b>The Last Button</b> · MiniMax H3<br>two speakers, viola, street ambience</sub></td>
+    <td align="center" width="33%"><img src="assets/gallery/h3-wrong-stop.gif" width="100%"><br><sub><b>The Wrong Stop</b> · MiniMax H3<br>traveler, partner, train ambience, guitar</sub></td>
     <td align="center" width="33%"><img src="assets/gallery/ovi-ticket-counter.gif" width="100%"><br><sub><b>Ticket Counter</b> · Ovi 1.1<br>passenger and clerk, scheduled turns</sub></td>
   </tr>
 </table>
@@ -78,7 +78,7 @@ Pick a backbone, run its `setup.sh`, download the checkpoints listed in its READ
 example. Every CLI supports `--dry-run` / `--validate-only` to check a scene without loading models.
 
 <table>
-<tr><th>LTX-2.5 · one 32 GB GPU</th><th>MiniMax H3 · one 80 GB GPU</th><th>Ovi 1.1 · one 32 GB GPU</th></tr>
+<tr><th>LTX-2.5 · one 32 GB GPU</th><th>MiniMax H3 · one H200-class GPU</th><th>Ovi 1.1 · one 32 GB GPU</th></tr>
 <tr valign="top"><td>
 
 ```bash
@@ -96,7 +96,7 @@ cd minimax-h3 && ./setup.sh
 export SOUNDWICH_SAM3_PYTHON=/path/to/sam3/python
 .venv/bin/python \
   -m soundwich_h3.generate \
-  --scene examples/the_last_button.json
+  --scene examples/the_rooftop_reservation.json
 ```
 
 </td><td>
@@ -114,6 +114,22 @@ cd ovi-1.1 && ./setup.sh
 Each run records and caches the carriers the scene needs on first use, then writes every stem as its own WAV next to
 the mixed video. Entity routing on LTX-2.5 and H3 runs [SAM 3](https://github.com/facebookresearch/sam3) in its
 own environment as a subprocess. See each folder's README for checkpoints, outputs, and settings.
+
+## Editing stems
+
+Because every source is its own stem, a finished run can be edited one stem at a time: move a line to a new time
+or replace it with a new take, then refine the video on the fixed, edited audio so the right person's lips follow.
+
+```bash
+# LTX-2.5: swap the scientist's and the android's turns
+python -m soundwich_ltx.edit --run outputs/neon_biology_lab_seed1096 \
+  --edit examples/edits/neon_biology_lab_swap_turns.yaml
+# MiniMax H3: deliver the man's reply two seconds later
+python -m soundwich_h3.edit --run outputs/the_rooftop_reservation-seed3101 \
+  --edit examples/edits/rooftop_later_reply.json
+```
+
+Muting and remixing need no model: the stems are plain WAV files.
 
 ## Describing a scene
 
@@ -148,7 +164,7 @@ stems:                          # one audio stem per source, each with its own t
 
 The exact schema differs slightly per backbone. The complete examples are
 [`ltx-2.5/examples/neon_biology_lab.yaml`](ltx-2.5/examples/neon_biology_lab.yaml),
-[`minimax-h3/examples/the_last_button.json`](minimax-h3/examples/the_last_button.json), and
+[`minimax-h3/examples/the_rooftop_reservation.json`](minimax-h3/examples/the_rooftop_reservation.json), and
 [`ovi-1.1/examples/ticket_counter.yaml`](ovi-1.1/examples/ticket_counter.yaml).
 
 ## Repository layout
