@@ -88,7 +88,7 @@ Both examples are from the project page:
   the glass, and a jazz-guitar score.
 - *The Wrong Stop* (1280×736, seed 3103): two travelers on a sleeper train with two lines each, train ambience,
   and an acoustic-guitar score. It uses its own carrier references (`carrier_references_wrong_stop.json`, a
-  different quiet prompt) and a Stage-1 quiet blend of 0.6.
+  different quiet prompt).
 
 The project page shows the Stage-1 result (`stage1/`) of both.
 
