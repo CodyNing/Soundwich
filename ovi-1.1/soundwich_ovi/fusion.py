@@ -16,7 +16,7 @@ from ovi.modules.attention import flash_attention
 from ovi.modules.fusion import FusionModel
 from ovi.modules.model import rope_apply
 
-from .blending import blend_cached_carriers, blend_mean_carriers
+from .blending import blend_cached_carriers
 
 
 def _multistem_cross_attention_forward(
@@ -229,34 +229,21 @@ def single_multistem_fusion_block_forward(
                 multistem_options.get("activation_value_scale", 0.80)
             ),
         }
-        if activation_tokens is not None and suppression_tokens is not None:
-            audio_y = audio_y.clone()
-            activation = activation_tokens[block_index]
-            suppression = suppression_tokens[block_index]
-            if activation.ndim == 1:
-                activation = activation.reshape(1, -1)
-            if suppression.ndim == 1:
-                suppression = suppression.reshape(1, -1)
-            audio_y[:real_count] = blend_cached_carriers(
-                audio_y[:real_count],
-                activation=activation,
-                suppression=suppression,
-                **blend_options,
-            )
-        else:
-            audio_y = blend_mean_carriers(
-                audio_y,
-                real_stem_count=real_count,
-                activation_index=int(multistem_options["activation_index"]),
-                suppression_index=int(multistem_options["suppression_index"]),
-                activation_quantile=float(
-                    multistem_options.get("activation_quantile", 0.70)
-                ),
-                suppression_quantile=float(
-                    multistem_options.get("suppression_quantile", 0.30)
-                ),
-                **blend_options,
-            )
+        if activation_tokens is None or suppression_tokens is None:
+            raise ValueError("carrier blending requires cached activation and suppression carriers")
+        audio_y = audio_y.clone()
+        activation = activation_tokens[block_index]
+        suppression = suppression_tokens[block_index]
+        if activation.ndim == 1:
+            activation = activation.reshape(1, -1)
+        if suppression.ndim == 1:
+            suppression = suppression.reshape(1, -1)
+        audio_y[:real_count] = blend_cached_carriers(
+            audio_y[:real_count],
+            activation=activation,
+            suppression=suppression,
+            **blend_options,
+        )
     with torch.amp.autocast("cuda", dtype=torch.bfloat16):
         audio = audio + audio_y * audio_e[2].squeeze(2)
 

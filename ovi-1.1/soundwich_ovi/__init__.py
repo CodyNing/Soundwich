@@ -74,6 +74,12 @@ def _ensure_upstream_importable() -> Path:
             "or set SOUNDWICH_OVI_REPO (or PYTHONPATH) to an existing checkout."
         )
     _warn_if_not_pinned(repo_root)
+    loaded = sys.modules.get("ovi")
+    if loaded is not None and Path(loaded.__file__).resolve().parent.parent != repo_root.resolve():
+        raise ImportError(
+            f"an 'ovi' package from {Path(loaded.__file__).parent} is already imported; "
+            f"import soundwich_ovi before it so the checkout at {repo_root} is used"
+        )
     if str(repo_root) in sys.path:
         sys.path.remove(str(repo_root))
     sys.path.insert(0, str(repo_root))

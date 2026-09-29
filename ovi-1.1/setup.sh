@@ -19,20 +19,25 @@ if [ "$(git -C "${UPSTREAM_DIR}" rev-parse HEAD)" != "${UPSTREAM_COMMIT}" ]; the
   git -C "${UPSTREAM_DIR}" checkout --detach "${UPSTREAM_COMMIT}"
 fi
 
+# Versions below are the environment the paper results were reproduced with (Python 3.11, CUDA 12.8).
+PYTHON="${PYTHON:-python3.11}"
 if [ ! -d "${ENV_DIR}" ]; then
-  python3 -m venv "${ENV_DIR}"
+  "${PYTHON}" -c 'import sys; assert sys.version_info[:2] == (3, 11), "Python 3.11 is required"'
+  "${PYTHON}" -m venv "${ENV_DIR}"
 fi
 
 "${ENV_DIR}/bin/pip" install --upgrade pip
+"${ENV_DIR}/bin/pip" install --index-url https://download.pytorch.org/whl/cu128 \
+  torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0
 "${ENV_DIR}/bin/pip" install -r "${UPSTREAM_DIR}/requirements.txt"
 "${ENV_DIR}/bin/pip" install -r "${ROOT}/requirements.txt"
 
-# flash-attn is required by upstream ovi/modules/attention.py and needs a
-# CUDA toolchain matching your GPU; install it separately if the generic
-# wheel below does not match your environment (see flash-attn's own
-# installation docs for CUDA-version-specific builds).
-"${ENV_DIR}/bin/pip" install flash-attn --no-build-isolation || \
-  echo "flash-attn install failed; install a build matching your CUDA/GPU manually"
+# Upstream Ovi's attention requires flash-attn. It compiles against your CUDA toolkit (CUDA_HOME) when no
+# prebuilt wheel matches; set TORCH_CUDA_ARCH_LIST for your GPU to speed up the build.
+if ! "${ENV_DIR}/bin/pip" install flash_attn==2.8.3.post1 --no-build-isolation; then
+  echo "flash-attn failed to install; Ovi cannot run without it. Install a build matching your CUDA/GPU." >&2
+  exit 1
+fi
 
 echo "Environment ready: ${ENV_DIR}"
 echo "Download the 10-second model checkpoint with:"

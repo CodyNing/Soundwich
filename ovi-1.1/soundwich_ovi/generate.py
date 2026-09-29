@@ -48,8 +48,6 @@ DEFAULT_CONFIG: dict = {
     "audio_guidance_scale": 3.0,
     "slg_layer": 11,
     "method": {
-        "activation_quantile": 0.70,
-        "suppression_quantile": 0.30,
         "inside_strength": 0.15,
         "outside_strength": 0.50,
         "outside_suppression": 0.25,
@@ -89,11 +87,13 @@ def resolve_config(args: argparse.Namespace) -> dict:
     config = {k: v for k, v in DEFAULT_CONFIG.items() if k != "method"}
     config["method"] = dict(DEFAULT_CONFIG["method"])
     config["ckpt_dir"] = args.ckpt_dir
+    if args.sample_steps <= 0:
+        raise ValueError("--sample-steps must be positive")
     config["sample_steps"] = int(args.sample_steps)
     return config
 
 
-def _save_scene_result(output_root: Path, scene: SceneSpec, result: dict) -> Path:
+def _save_scene_result(output_root: Path, scene: SceneSpec, result: dict, config: dict) -> Path:
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     scene_dir = output_root / f"{stamp}_{scene.id}_seed_{scene.seed}"
     scene_dir.mkdir(parents=True, exist_ok=False)
@@ -121,6 +121,7 @@ def _save_scene_result(output_root: Path, scene: SceneSpec, result: dict) -> Pat
         "prompts": result["prompts"],
         "resolution": result["resolution"],
         "method": result["method"],
+        "sampling": {key: value for key, value in config.items() if key not in {"method", "ckpt_dir"}},
     }
     (scene_dir / "metadata.json").write_text(
         json.dumps(metadata, indent=2), encoding="utf-8"
@@ -144,11 +145,10 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     if args.validate_only:
-        groups = ",".join(stem.carrier_group for stem in scene.stems)
         print(
             f"valid: {scene.id} stems={len(scene.stems)} "
             f"duration={scene.duration_seconds}s seed={scene.seed} "
-            f"steps={config['sample_steps']} groups={groups}"
+            f"steps={config['sample_steps']}"
         )
         print(json.dumps(config, indent=2))
         return 0
@@ -192,6 +192,8 @@ def main(argv: list[str] | None = None) -> int:
         video_guidance_scale=config["video_guidance_scale"],
         audio_guidance_scale=config["audio_guidance_scale"],
         slg_layer=config["slg_layer"],
+        # Recorded tokens depend on the checkpoint and its quantization, not only the sampling settings.
+        model_settings={key: config[key] for key in ("model_name", "qint8", "fp8")},
     )
     activation_path = ensure_carrier_bank(
         engine, carrier_config=DEFAULT_ACTIVATION_CARRIER, **carrier_kwargs
@@ -215,7 +217,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     output_root.mkdir(parents=True, exist_ok=True)
-    saved = _save_scene_result(output_root, scene, result)
+    saved = _save_scene_result(output_root, scene, result, config)
     logging.info("Saved %s", saved)
     return 0
 

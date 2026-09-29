@@ -100,66 +100,6 @@ def select_mean_token(
     return hidden[selected].mean(dim=0, keepdim=True)
 
 
-def blend_mean_carriers(
-    hidden: torch.Tensor,
-    *,
-    real_stem_count: int,
-    activation_index: int,
-    suppression_index: int,
-    inside_gate: torch.Tensor,
-    outside_gate: torch.Tensor,
-    activation_quantile: float = 0.70,
-    suppression_quantile: float = 0.30,
-    inside_strength: float = 0.10,
-    outside_strength: float = 0.50,
-    outside_suppression: float = 0.25,
-    activation_value_scale: float = 0.80,
-) -> torch.Tensor:
-    """Blend repeated activation/suppression mean tokens into real stems.
-
-    The activation carrier is RMS-matched to each real stem inside its active
-    timeline, then added as a residual. The suppression carrier keeps its own
-    naturally low-energy scale and is never RMS-matched to the real stem.
-    """
-    if hidden.ndim != 3:
-        raise ValueError("hidden must have shape [branches, tokens, channels]")
-    branch_count, sequence_length, _ = hidden.shape
-    if not 0 < real_stem_count <= branch_count:
-        raise ValueError("invalid real_stem_count")
-    if activation_index >= branch_count or suppression_index >= branch_count:
-        raise ValueError("carrier index outside hidden batch")
-    expected = (real_stem_count, sequence_length)
-    if tuple(inside_gate.shape) != expected or tuple(outside_gate.shape) != expected:
-        raise ValueError(f"timeline gates must have shape {expected}")
-
-    alpha = max(0.0, min(float(inside_strength), 1.0))
-    beta = max(0.0, min(float(outside_strength), 1.0))
-    suppress = max(0.0, min(float(outside_suppression), 1.0))
-    value_scale = max(0.0, float(activation_value_scale))
-    if alpha == 0.0 and beta == 0.0 and suppress == 0.0:
-        return hidden
-
-    activation = select_mean_token(
-        hidden[activation_index], quantile=activation_quantile, mode="top"
-    )
-    suppression = select_mean_token(
-        hidden[suppression_index], quantile=suppression_quantile, mode="bottom"
-    )
-    result = hidden.clone()
-    result[:real_stem_count] = blend_cached_carriers(
-        result[:real_stem_count],
-        activation=activation,
-        suppression=suppression,
-        inside_gate=inside_gate,
-        outside_gate=outside_gate,
-        inside_strength=inside_strength,
-        outside_strength=outside_strength,
-        outside_suppression=outside_suppression,
-        activation_value_scale=activation_value_scale,
-    )
-    return result
-
-
 def blend_cached_carriers(
     real: torch.Tensor,
     *,

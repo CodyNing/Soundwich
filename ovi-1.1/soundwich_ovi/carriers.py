@@ -46,6 +46,7 @@ def ensure_carrier_bank(
     video_guidance_scale: float,
     audio_guidance_scale: float,
     slg_layer: int,
+    model_settings: dict[str, Any],
 ) -> Path:
     """Return the cached carrier-bank path, building it with ``engine`` if missing."""
     spec = load_carrier_spec(carrier_config)
@@ -57,6 +58,7 @@ def ensure_carrier_bank(
         "video_guidance_scale": video_guidance_scale,
         "audio_guidance_scale": audio_guidance_scale,
         "slg_layer": slg_layer,
+        "model": model_settings,
     }
     cache_path = carrier_cache_path(cache_dir, spec, settings)
     if cache_path.exists():
@@ -83,5 +85,8 @@ def ensure_carrier_bank(
         v2a_enabled=True,
     )
     Path(cache_dir).mkdir(parents=True, exist_ok=True)
-    result["bank"].save(cache_path)
+    # Write to a temporary name first so an interrupted run never leaves a partial cache entry.
+    partial = cache_path.with_suffix(".partial")
+    result["bank"].save(partial)
+    partial.replace(cache_path)
     return cache_path
