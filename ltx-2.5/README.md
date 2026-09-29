@@ -34,7 +34,8 @@ returns both the pre- and post-bandwidth-extension waveforms.
 
 ### Checkpoints
 
-Download from [Lightricks/LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5) (accept the model terms first):
+Download from [Lightricks/LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5) (accept the model terms first). The
+`hf` command comes with `huggingface_hub` (`pip install -U huggingface_hub`):
 
 ```bash
 hf download Lightricks/LTX-2.5 \
@@ -176,6 +177,8 @@ See `examples/neon_biology_lab.yaml`. A scene lists:
   reviewed SAM overrides (`sam_prompt`, `sam_point_frame`, `sam_points`).
 - `generation`: `seed`, `frames` (8k+1), `frame_rate`, `width`/`height` (final size; Stage 1 runs at half),
   `steps`, CFG scales.
+- `duration_seconds` (top level, default 10): nominal clip length used only to size the window feathering
+  (`stage1.window_feather` × this value). Windows themselves are placed on the `frames`/`frame_rate` timeline.
 - `method_settings`: overrides of the method defaults in `soundwich_ltx/scene.py` (`DEFAULT_METHOD_SETTINGS`).
 
 Key knobs:

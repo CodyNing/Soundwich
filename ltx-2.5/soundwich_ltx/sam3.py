@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import shutil
 import subprocess
@@ -61,6 +62,13 @@ def read_token_masks(config: MultiStemConfig, path: Path) -> dict[int, list[floa
         if not isinstance(values, list) or not values:
             raise ValueError(f"SAM3 output has no token mask for {stem.id}")
         masks[index] = [float(value) for value in values]
+        if max(masks[index]) <= config.stage2.mask_threshold:
+            # Stage 2 would route no video to or from this stem; usually a SAM prompt/click that missed.
+            logging.warning(
+                "SAM3 mask for %s is empty (prompt %r); check sam_outputs/overlays and add sam_points",
+                stem.id,
+                stem.sam_prompt,
+            )
     return masks
 
 
