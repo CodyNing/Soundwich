@@ -24,7 +24,7 @@ def sam_environment():
     python = os.environ.get('SOUNDWICH_SAM3_PYTHON')
     if not python or not Path(python).is_file():
         raise RuntimeError('Set SOUNDWICH_SAM3_PYTHON to the python executable of your SAM3 environment '
-                           '(see README, "SAM3 environment").')
+                           '(see README, "SAM 3").')
     if not BACKEND.is_file():
         raise FileNotFoundError(f'SAM3 backend script not found: {BACKEND}')
     return python
@@ -87,6 +87,10 @@ def prepare_masks(scene, source, mask_root, policy):
     if os.environ.get('SOUNDWICH_SAM3_CHECKPOINT'):
         command += ['--checkpoint-path', os.environ['SOUNDWICH_SAM3_CHECKPOINT']]
     env = dict(os.environ, PYTORCH_ALLOC_CONF='expandable_segments:True')
+    if not os.environ.get('SOUNDWICH_SAM3_CHECKPOINT'):
+        # The H3 run is forced offline; SAM3 must be allowed to fetch its checkpoint from Hugging Face.
+        for key in ('HF_HUB_OFFLINE', 'TRANSFORMERS_OFFLINE'):
+            env.pop(key, None)
     print('Running SAM3.1 on the Stem Formation video', flush=True)
     subprocess.run(command, check=True, env=env)
     masks, metadata = load_entity_masks(scene, work, policy)

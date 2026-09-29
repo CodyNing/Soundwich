@@ -95,7 +95,8 @@ The project page shows the Stage-1 result (`stage1/`) of both.
 The first run records the carriers, each a short native single-row H3 generation. These are the activation
 carriers of the scene's stems (`female_speech`, `male_speech`, and `door_knock` for the door) and `quiet` on the
 Stage-1 schedule, plus `quiet` again on the Stage-2 schedule, made by refining the quiet reference itself. Carriers
-depend on the geometry, so each example records its own. They are cached in `cache/carriers/`
+are keyed by their reference prompt and seed and by the geometry, so examples with the same references and geometry
+share them (*The Wrong Stop*, at 1280×736 with its own quiet reference, records its own). They are cached in `cache/carriers/`
 (`SOUNDWICH_H3_CACHE`), together with the text embeddings, and later runs reuse them. The other flags are
 `--output-dir`, `--seed` (Stage 2 uses seed + 1), and `--stage1-only`. Completed stages in the output directory are
 reused.
@@ -111,6 +112,7 @@ Everything for one run is written to `outputs/<scene id>-seed<seed>/`:
 | `stage1/` | The same files for the Stage-1 result |
 | `sam/` | SAM prompts, full-resolution masks, overlays (`overlays/`) and mask validation |
 | `*/latents.pt`, `*/scene.json`, `*/run.json` | Latents, the exact scene, and the resolved schedule/settings |
+| `plan.json` | The run's scene id, seed, and carrier references (read by `soundwich_h3.edit`) |
 
 ### Reviewing SAM masks
 

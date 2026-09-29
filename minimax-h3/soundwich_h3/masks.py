@@ -37,6 +37,11 @@ def latent_frame_centers(num_latents, num_frames):
     return [min((i // 5) * 17 + offsets[i % 5], num_frames - 1) for i in range(num_latents)]
 
 
+def _prompt_key(text):
+    # The SAM backend collapses whitespace and appends a period; compare prompts the same way.
+    return ' '.join(str(text).split()).rstrip('.')
+
+
 def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
@@ -102,7 +107,7 @@ def load_entity_masks(scene, root, policy, *, threshold=MASK_THRESHOLD):
     if [p['id'] for p in policy['prompts']] != list(backend['stems']):
         raise ValueError('SAM prompt/component order does not match policy')
     for p in policy['prompts']:
-        if backend['stems'][p['id']]['prompt'].rstrip('.') != p['prompt'].rstrip('.'):
+        if _prompt_key(backend['stems'][p['id']]['prompt']) != _prompt_key(p['prompt']):
             raise ValueError(f'SAM prompt mismatch: {p["id"]}')
     frames, rows, cols = token_grid(scene)
     video_tokens = frames * rows * cols

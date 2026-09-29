@@ -37,6 +37,11 @@ def load_scene(path, seed=None):
             raise ValueError(f'Scene is missing {key!r}')
     if seed is not None:
         scene['seed'] = seed
+    # Checked here so a bad scene fails before Stem Formation rather than at Scene Integration.
+    if (scene['num_frames'] - 5) % 17 or scene['width'] % 32 or scene['height'] % 32:
+        raise ValueError('Scene geometry needs num_frames = 17k+5 and width/height multiples of 32')
+    if not 2 <= len(scene['stems']) <= 10:
+        raise ValueError('Entity-routed Scene Integration supports 2-10 stems')
     check_stems(scene)
     references = json.loads((path.parent/scene['carrier_references']).read_text())
     groups = sorted({s['carrier_group'] for s in scene['stems'] if s.get('carrier_group')} | {QUIET_GROUP})
@@ -152,13 +157,29 @@ class Pipeline:
             torch.cuda.empty_cache()
 
 
-def completed(directory, scene):
+# Fields that cannot change a stage's result, so editing them keeps that stage reusable.
+STAGE1_IGNORED_STEM_KEYS = ('sam_prompt', 'sam_points', 'sam_point_frame', 'video_routing')
+
+
+def stage1_view(scene):
+    view = {k: v for k, v in scene.items() if k != 'stage2'}
+    view['stems'] = [{k: v for k, v in s.items() if k not in STAGE1_IGNORED_STEM_KEYS} for s in scene['stems']]
+    return view
+
+
+def stage2_view(scene):
+    view = copy.deepcopy(scene)
+    view.get('refinement', {}).pop('source', None)
+    return view
+
+
+def completed(directory, scene, view=lambda scene: scene):
     directory = Path(directory)
     if not directory.exists():
         return False
     run = directory/'run.json'
     if run.is_file() and json.loads(run.read_text()).get('status') == 'complete':
-        if json.loads((directory/'scene.json').read_text()) != scene:
+        if view(json.loads((directory/'scene.json').read_text())) != view(scene):
             raise ValueError(f'{directory} was generated from a different scene; choose another --output-dir')
         return True
     raise FileExistsError(f'Incomplete output; inspect and remove: {directory}')
@@ -220,7 +241,7 @@ def run_stage1(pipeline, scene, references, output):
     from .replay import ReplayCarriers
     from .sampling import generate
     banks = {g: stage1_bank(pipeline, g, r, scene) for g, r in references.items()}
-    if completed(output, scene):
+    if completed(output, scene, stage1_view):
         print(f'Using completed Stem Formation: {output}', flush=True)
         return
     pipe = pipeline.get()
@@ -241,7 +262,7 @@ def run_stage2(pipeline, scene, references, output):
     scene2 = copy.deepcopy(scene)
     scene2['refinement'] = dict(source=str(source.resolve()), video_sigma=stage2['video_sigma'],
                                 audio_sigma=stage2['audio_sigma'], noise_seed=int(scene['seed'])+1)
-    if completed(output/'stage2', scene2):
+    if completed(output/'stage2', scene2, stage2_view):
         print(f'Using completed Scene Integration: {output/"stage2"}', flush=True)
         return
     quiet = stage2_quiet_bank(pipeline, references[QUIET_GROUP], scene, stage2)
