@@ -6,7 +6,7 @@
 
 ### Video Generation with Layered and Controllable Audio
 
-<a href="https://arxiv.org/abs/XXXX.XXXXX"><img src="https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b?logo=arxiv&logoColor=white" alt="arXiv"></a>
+<a href="https://arxiv.org/abs/2610.00691"><img src="https://img.shields.io/badge/arXiv-2610.00691-b31b1b?logo=arxiv&logoColor=white" alt="arXiv"></a>
 <a href="https://soundwich.avdemo.workers.dev/"><img src="https://img.shields.io/badge/Project-Page-edc27c?logo=googlechrome&logoColor=white" alt="Project page"></a>
 <a href="https://pub-238c8a4431a4476c8eb0f5bd97a3846e.r2.dev/media/demo/20260926/video.mp4"><img src="https://img.shields.io/badge/Demo-Video-191b19?logo=youtube&logoColor=white" alt="Demo video"></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-3b82f6" alt="License"></a>
@@ -177,10 +177,10 @@ Soundwich/
 ## Citation
 
 ```bibtex
-@article{soundwich2026,
+@article{ning2026soundwich,
   title   = {Soundwich: Video Generation with Layered and Controllable Audio},
-  author  = {TBD},
-  journal = {arXiv preprint arXiv:XXXX.XXXXX},
+  author  = {Ning, Zhuo and Naghi Razlighi, AmirHossein and Polaczek, Sagi and Cohen-Or, Daniel and Mahdavi-Amiri, Ali},
+  journal = {arXiv preprint arXiv:2610.00691},
   year    = {2026}
 }
 ```
